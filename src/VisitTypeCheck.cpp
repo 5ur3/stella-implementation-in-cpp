@@ -1,6 +1,279 @@
 #include "VisitTypeCheck.h"
+#include "VisitTypeCheckUtils/StellaExpression.h"
+#include "VisitTypeCheckUtils/StellaFunction.h"
+#include "VisitTypeCheckUtils/StellaType.h"
+#include <deque>
 #include <iostream>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
+// My implementation of type checking program consists of 2 main parts.
+//
+// The first part is the state machine (this file)
+// It is used to keep track of what kind of token is expected to come next
+// For example, when Visitor encounters Ident, the state is either
+//    "STATE_AWAITING_FUNCTION_IDENT",
+//    "STATE_AWAITING_FUNCTION_PARAM_IDENT" or
+//    "STATE_AWAITING_ABSTRACTION_PARAM_IDENT"
+//
+// The second part of my type checking implementation is the construction of
+// typing trees. For example, when Visitor encounters a Function Declaration, it
+// starts to construct a new typing tree with the StellaFunction at the root.
+// When the tree is built, it is enough to call StellaFunction.isTypingCorrect()
+// to check typing correctness of the function (and everything inside)
+//
+// It is advised to read the code and comments in that order:
+// 1) Briefly read the state machine (this file)
+// 2) See StellaType class (./VisitTypeCheckUtils/StellaType)
+// 3) See StellaFunction class (./VisitTypeCheckUtils/StellaFunction)
+// 4) See StellaExpression declaration (./VisitTypeCheckUtils/StellaExpression)
+// 5) See some StellaExpression implementations (./VisitTypeCheckUtils/StellaExpressions/*)
+//
+// My implementation also prints informative type errors
+
+enum State {
+  STATE_AWAITING_FUNCTION_IDENT = 0,
+  STATE_PARSING_FUNCTION_RETURN_TYPE = 1,
+  STATE_AWAITING_FUNCTION_PARAM_IDENT = 2,
+  STATE_PARSING_FUNCTION_PARAM_TYPE = 3,
+  STATE_AWAIGING_FUNCTION_EXPRESSION = 4,
+
+  STATE_AWAITING_ABSTRACTION_PARAM_IDENT = 5,
+  STATE_PARSING_ABSTRACTION_PARAM_TYPE = 6,
+  STATE_AWAITING_EXPRESSION = 7,
+
+  STATE_IDLE = 100
+};
+
+State state = STATE_IDLE;
+
+// Global context contains function type signatures
+std::map<Stella::StellaIdent, StellaType> globalContext;
+StellaFunction *currentFunction = NULL;
+
+// stellaFunctions map is used for debugging only
+std::map<Stella::StellaIdent, StellaFunction *> stellaFunctions;
+
+void verifyFunction(StellaFunction *function) {
+  bool isCorrect = function->isTypingCorrect();
+
+  if (!isCorrect) {
+    exit(1);
+  }
+}
+
+// Functions below are called directly from the template visitor
+// These functions control the program state and build typing trees
+void onFunction(Stella::StellaIdent ident) {
+  if (currentFunction != NULL) {
+    verifyFunction(currentFunction);
+    globalContext.insert(
+        {currentFunction->ident,
+         StellaType(currentFunction->paramType, currentFunction->returnType)});
+  }
+
+  auto function = new StellaFunction(ident, globalContext);
+  stellaFunctions.insert({ident, function});
+  state = STATE_AWAITING_FUNCTION_IDENT;
+  currentFunction = function;
+}
+
+void onIdent(Stella::StellaIdent ident) {
+  switch (state) {
+  case STATE_AWAITING_FUNCTION_IDENT: {
+    state = STATE_AWAITING_FUNCTION_PARAM_IDENT;
+    break;
+  }
+  case STATE_AWAITING_FUNCTION_PARAM_IDENT: {
+    currentFunction->setParamIdent(ident);
+    state = STATE_PARSING_FUNCTION_PARAM_TYPE;
+    break;
+  }
+  case STATE_AWAITING_ABSTRACTION_PARAM_IDENT: {
+    currentFunction->proxyIdent(ident);
+    state = STATE_PARSING_ABSTRACTION_PARAM_TYPE;
+    break;
+  }
+  default:
+    break;
+  }
+}
+
+void onType(std::string type) {
+  switch (state) {
+  case STATE_PARSING_FUNCTION_PARAM_TYPE: {
+    currentFunction->assembleParamType(type);
+    break;
+  }
+  case STATE_PARSING_FUNCTION_RETURN_TYPE: {
+    currentFunction->assembleReturnType(type);
+    break;
+  }
+  case STATE_PARSING_ABSTRACTION_PARAM_TYPE: {
+    currentFunction->proxyExpressionTypeToken(type);
+    break;
+  }
+  default:
+    break;
+  };
+}
+
+void onTypeParsingEnd() {
+  switch (state) {
+  case STATE_PARSING_FUNCTION_PARAM_TYPE: {
+    state = STATE_PARSING_FUNCTION_RETURN_TYPE;
+    break;
+  }
+  case STATE_PARSING_FUNCTION_RETURN_TYPE: {
+    state = STATE_AWAIGING_FUNCTION_EXPRESSION;
+    break;
+  }
+  case STATE_PARSING_ABSTRACTION_PARAM_TYPE: {
+    state = STATE_AWAITING_EXPRESSION;
+    break;
+  }
+  default:
+    break;
+  }
+}
+
+void onExpression(StellaExpression *expression) {
+  switch (state) {
+  case STATE_AWAIGING_FUNCTION_EXPRESSION: {
+    currentFunction->setExpression(expression);
+    break;
+  }
+  case STATE_AWAITING_EXPRESSION: {
+    currentFunction->proxyExpression(expression);
+    break;
+  }
+  default:
+    break;
+  }
+}
+
+void onConstInt() { onExpression(new StellaConstIntExpression()); }
+
+void onConstBool() { onExpression(new StellaConstBoolExpression()); }
+
+void onVar(Stella::StellaIdent ident) {
+  onExpression(new StellaVarExpression(ident));
+}
+
+void onSucc() {
+  onExpression(new StellaSuccExpression());
+  state = STATE_AWAITING_EXPRESSION;
+}
+
+void onNatRec() {
+  onExpression(new StellaNatRecExpression());
+  state = STATE_AWAITING_EXPRESSION;
+}
+
+void onAbstraction() {
+  onExpression(new StellaAbstractionExpression());
+  state = STATE_AWAITING_ABSTRACTION_PARAM_IDENT;
+}
+
+void onApplication() {
+  onExpression(new StellaApplicationExpression());
+  state = STATE_AWAITING_EXPRESSION;
+}
+
+void onCondition() {
+  onExpression(new StellaConditionExpression());
+  state = STATE_AWAITING_EXPRESSION;
+}
+
+// Functions below are used for debugging only. They print function and
+// expression type signatures
+void print_indent(int level) {
+  for (int i = 0; i < level; i++) {
+    std::cout << "\t";
+  }
+}
+
+void print_expression(StellaExpression *expression, int level) {
+  print_indent(level);
+  switch (expression->type) {
+  case STELLA_EXPRESSION_TYPE_CONST_INT: {
+    std::cout << "CONST INT" << std::endl;
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_CONST_BOOL: {
+    std::cout << "CONST BOOL" << std::endl;
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_ABSTRACTION: {
+    StellaAbstractionExpression *expr =
+        (StellaAbstractionExpression *)expression;
+    std::cout << "ABSTRACTION(" << expr->paramIdent << ": "
+              << expr->paramType.type_string
+              << "): " << expr->expression->getStellaType().type_string
+              << std::endl;
+    print_expression(expr->expression, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_APPLICATION: {
+    std::cout << "APPLICATION" << std::endl;
+    StellaApplicationExpression *expr =
+        (StellaApplicationExpression *)expression;
+    print_expression(expr->expression1, level + 1);
+    print_expression(expr->expression2, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_CONDITION: {
+    std::cout << "CONDITION" << std::endl;
+    StellaConditionExpression *expr = (StellaConditionExpression *)expression;
+    print_expression(expr->condition, level + 1);
+    print_expression(expr->expression1, level + 1);
+    print_expression(expr->expression2, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_VAR: {
+    StellaVarExpression *expr = (StellaVarExpression *)expression;
+    std::cout << "VAR " << expr->ident << std::endl;
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_NAT_REC: {
+    std::cout << "NAT::REC" << std::endl;
+    StellaNatRecExpression *expr = (StellaNatRecExpression *)expression;
+    print_expression(expr->n, level + 1);
+    print_expression(expr->z, level + 1);
+    print_expression(expr->s, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_SUCC: {
+    std::cout << "SUCC" << std::endl;
+    StellaSuccExpression *expr = (StellaSuccExpression *)expression;
+    print_expression(expr->expression, level + 1);
+    break;
+  }
+  }
+}
+
+void print_function(StellaFunction *function) {
+  std::cout << function->ident << "(" << function->paramIdent << ": "
+            << function->paramType.type_string
+            << "): " << function->returnType.type_string << std::endl;
+
+  print_expression(function->expression, 1);
+}
+
+// This is called when visitor finishes reading a program
+void onEnd() {
+  if (currentFunction != NULL) {
+    verifyFunction(currentFunction);
+  }
+
+  // Try this if you want to see what typing tree looks like:
+  // print_function(stellaFunctions["main"]);
+}
+
+// Code below was not changed except for calling state-machine controlling
+// methods above, such as onFunction()
 namespace Stella
 {
   void VisitTypeCheck::visitProgram(Program *t) {}                   // abstract class
@@ -36,6 +309,8 @@ namespace Stella
       a_program->listextension_->accept(this);
     if (a_program->listdecl_)
       a_program->listdecl_->accept(this);
+
+    onEnd();
   }
 
   void VisitTypeCheck::visitLanguageCore(LanguageCore *language_core)
@@ -53,6 +328,7 @@ namespace Stella
 
   void VisitTypeCheck::visitDeclFun(DeclFun *decl_fun)
   {
+    onFunction(decl_fun->stellaident_);
     /* Code For DeclFun Goes Here */
 
     if (decl_fun->listannotation_)
@@ -129,7 +405,7 @@ namespace Stella
 
   void VisitTypeCheck::visitTypeFun(TypeFun *type_fun)
   {
-    /* Code For TypeFun Goes Here */
+    onType("fun");
 
     if (type_fun->listtype_)
       type_fun->listtype_->accept(this);
@@ -190,11 +466,13 @@ namespace Stella
 
   void VisitTypeCheck::visitTypeBool(TypeBool *type_bool)
   {
+    onType("bool");
     /* Code For TypeBool Goes Here */
   }
 
   void VisitTypeCheck::visitTypeNat(TypeNat *type_nat)
   {
+    onType("nat");
     /* Code For TypeNat Goes Here */
   }
 
@@ -385,7 +663,7 @@ namespace Stella
 
   void VisitTypeCheck::visitIf(If *if_)
   {
-    /* Code For If Goes Here */
+    onCondition();
 
     if (if_->expr_1)
       if_->expr_1->accept(this);
@@ -487,7 +765,7 @@ namespace Stella
 
   void VisitTypeCheck::visitAbstraction(Abstraction *abstraction)
   {
-    /* Code For Abstraction Goes Here */
+    onAbstraction();
 
     if (abstraction->listparamdecl_)
       abstraction->listparamdecl_->accept(this);
@@ -584,7 +862,7 @@ namespace Stella
 
   void VisitTypeCheck::visitApplication(Application *application)
   {
-    /* Code For Application Goes Here */
+    onApplication();
 
     if (application->expr_)
       application->expr_->accept(this);
@@ -678,7 +956,7 @@ namespace Stella
 
   void VisitTypeCheck::visitSucc(Succ *succ)
   {
-    /* Code For Succ Goes Here */
+    onSucc();
 
     if (succ->expr_)
       succ->expr_->accept(this);
@@ -718,7 +996,7 @@ namespace Stella
 
   void VisitTypeCheck::visitNatRec(NatRec *nat_rec)
   {
-    /* Code For NatRec Goes Here */
+    onNatRec();
 
     if (nat_rec->expr_1)
       nat_rec->expr_1->accept(this);
@@ -750,12 +1028,12 @@ namespace Stella
 
   void VisitTypeCheck::visitConstTrue(ConstTrue *const_true)
   {
-    /* Code For ConstTrue Goes Here */
+    onConstBool();
   }
 
   void VisitTypeCheck::visitConstFalse(ConstFalse *const_false)
   {
-    /* Code For ConstFalse Goes Here */
+    onConstBool();
   }
 
   void VisitTypeCheck::visitConstUnit(ConstUnit *const_unit)
@@ -765,14 +1043,14 @@ namespace Stella
 
   void VisitTypeCheck::visitConstInt(ConstInt *const_int)
   {
-    /* Code For ConstInt Goes Here */
+    onConstInt();
 
     visitInteger(const_int->integer_);
   }
 
   void VisitTypeCheck::visitVar(Var *var)
   {
-    /* Code For Var Goes Here */
+    onVar(var->stellaident_);
 
     visitStellaIdent(var->stellaident_);
   }
@@ -970,6 +1248,7 @@ namespace Stella
 
   void VisitTypeCheck::visitStellaIdent(StellaIdent x)
   {
+    onIdent(x);
     /* Code for StellaIdent Goes Here */
   }
 
