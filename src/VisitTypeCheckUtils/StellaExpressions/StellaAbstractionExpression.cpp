@@ -1,11 +1,12 @@
 #include "../StellaExpression.h"
+#include "../StellaType.h"
 #include <iostream>
 
 StellaAbstractionExpression::StellaAbstractionExpression() {
   this->type = STELLA_EXPRESSION_TYPE_ABSTRACTION;
 }
 StellaType StellaAbstractionExpression::getStellaType() {
-  return StellaType(this->paramType, this->expression->getStellaType());
+  return StellaType(StellaType("fun"), this->paramType, this->expression->getStellaType());
 }
 bool StellaAbstractionExpression::isTypingCorrect() {
   bool isCorrect = this->expression->isTypingCorrect();

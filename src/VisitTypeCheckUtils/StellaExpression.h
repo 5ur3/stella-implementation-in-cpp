@@ -13,7 +13,11 @@ enum StellaExpressionType {
   STELLA_EXPRESSION_TYPE_NAT_REC = 4,
   STELLA_EXPRESSION_TYPE_ABSTRACTION = 5,
   STELLA_EXPRESSION_TYPE_APPLICATION = 6,
-  STELLA_EXPRESSION_TYPE_CONDITION = 7
+  STELLA_EXPRESSION_TYPE_CONDITION = 7,
+
+  STELLA_EXPRESSION_TYPE_CONST_UNIT = 8,
+  STELLA_EXPRESSION_TYPE_TUPLE = 9,
+  STELLA_EXPRESSION_TYPE_DOT_TUPLE = 10,
 };
 
 // Representation of any stella expression
@@ -69,6 +73,13 @@ public:
 class StellaConstBoolExpression : public StellaExpression {
 public:
   StellaConstBoolExpression();
+  StellaType getStellaType();
+  bool isTypingCorrect();
+};
+
+class StellaConstUnitExpression : public StellaExpression {
+public:
+  StellaConstUnitExpression();
   StellaType getStellaType();
   bool isTypingCorrect();
 };
@@ -131,6 +142,34 @@ public:
   StellaExpression *expression2 = NULL;
 
   StellaApplicationExpression();
+  StellaType getStellaType();
+  bool isTypingCorrect();
+  void proxyIdent(Stella::StellaIdent ident);
+  void proxyExpressionTypeToken(std::string typeToken);
+  void proxyExpression(StellaExpression *expression);
+  bool isParsed();
+};
+
+class StellaDotTupleExpression : public StellaExpression {
+public:
+  StellaExpression *expression = NULL;
+  int index = 0;
+
+  StellaDotTupleExpression(int index);
+  StellaType getStellaType();
+  bool isTypingCorrect();
+  void proxyIdent(Stella::StellaIdent ident);
+  void proxyExpressionTypeToken(std::string typeToken);
+  void proxyExpression(StellaExpression *expression);
+  bool isParsed();
+};
+
+class StellaTupleExpression : public StellaExpression {
+public:
+  StellaExpression *expression1 = NULL;
+  StellaExpression *expression2 = NULL;
+
+  StellaTupleExpression();
   StellaType getStellaType();
   bool isTypingCorrect();
   void proxyIdent(Stella::StellaIdent ident);

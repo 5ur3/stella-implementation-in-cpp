@@ -33,8 +33,7 @@ public:
   // StellaType("bool")
   StellaType(std::string type_string);
   // Function constructor
-  StellaType(StellaType functionParamType, StellaType functionReturnType);
-
+  StellaType(StellaType baseType, StellaType arg1, StellaType arg2);
   bool operator==(const StellaType &stellaType) const;
   bool operator!=(const StellaType &stellaType) const;
 
@@ -44,6 +43,13 @@ public:
   // If the type is a function, you can get param and return types
   StellaType getParamType();
   StellaType getReturnType();
+
+  // This method is used to check whether the type is a tuple (2 elements only)
+  bool isTuple();
+
+  // If the type is a tuple, you can get types of the components (index can be 1
+  // or 2)
+  StellaType getTupleType(int index);
 };
 
 #endif

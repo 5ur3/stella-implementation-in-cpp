@@ -26,12 +26,15 @@ set (SRCS
   src/VisitTypeCheckUtils/StellaExpression.h
   src/VisitTypeCheckUtils/StellaExpressions/StellaConstIntExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaConstBoolExpression.cpp
+  src/VisitTypeCheckUtils/StellaExpressions/StellaConstUnitExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaVarExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaAbstractionExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaApplicationExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaConditionExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaSuccExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaNatRecExpression.cpp
+  src/VisitTypeCheckUtils/StellaExpressions/StellaTupleExpression.cpp
+  src/VisitTypeCheckUtils/StellaExpressions/StellaDotTupleExpression.cpp
   src/VisitTypeCheckUtils/StellaFunction.h
   src/VisitTypeCheckUtils/StellaFunction.cpp
   src/VisitTypeCheck.h
@@ -87,3 +90,5 @@ add_test(NAME increment_twice COMMAND stella-interpreter typecheck ../tests/well
 add_test(NAME higher-order-1 COMMAND stella-interpreter typecheck ../tests/well-typed/higher-order-1.stella)
 add_test(NAME logical-operators COMMAND stella-interpreter typecheck ../tests/well-typed/logical-operators.stella)
 add_test(NAME squares COMMAND stella-interpreter typecheck ../tests/well-typed/squares.stella)
+add_test(NAME pairs COMMAND stella-interpreter typecheck ../tests/well-typed/pairs.stella)
+add_test(NAME unit-type COMMAND stella-interpreter typecheck ../tests/well-typed/unit-type.stella)
