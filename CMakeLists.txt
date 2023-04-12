@@ -35,6 +35,7 @@ set (SRCS
   src/VisitTypeCheckUtils/StellaExpressions/StellaNatRecExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaTupleExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaDotTupleExpression.cpp
+  src/VisitTypeCheckUtils/StellaExpressions/StellaInlInrExpression.cpp
   src/VisitTypeCheckUtils/StellaFunction.h
   src/VisitTypeCheckUtils/StellaFunction.cpp
   src/VisitTypeCheck.h
@@ -92,3 +93,4 @@ add_test(NAME logical-operators COMMAND stella-interpreter typecheck ../tests/we
 add_test(NAME squares COMMAND stella-interpreter typecheck ../tests/well-typed/squares.stella)
 add_test(NAME pairs COMMAND stella-interpreter typecheck ../tests/well-typed/pairs.stella)
 add_test(NAME unit-type COMMAND stella-interpreter typecheck ../tests/well-typed/unit-type.stella)
+add_test(NAME inl-inr COMMAND stella-interpreter typecheck ../tests/well-typed/inl-inr.stella)

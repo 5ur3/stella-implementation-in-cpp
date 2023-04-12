@@ -18,6 +18,7 @@ enum StellaExpressionType {
   STELLA_EXPRESSION_TYPE_CONST_UNIT = 8,
   STELLA_EXPRESSION_TYPE_TUPLE = 9,
   STELLA_EXPRESSION_TYPE_DOT_TUPLE = 10,
+  STELLA_EXPRESSION_TYPE_INL_INR = 11
 };
 
 // Representation of any stella expression
@@ -185,6 +186,20 @@ public:
   StellaExpression *expression2 = NULL;
 
   StellaConditionExpression();
+  StellaType getStellaType();
+  bool isTypingCorrect();
+  void proxyIdent(Stella::StellaIdent ident);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
+  void proxyExpression(StellaExpression *expression);
+  bool isParsed();
+};
+
+class StellaInlInrExpression : public StellaExpression {
+public:
+  int side = 0;
+  StellaExpression *expression = NULL;
+
+  StellaInlInrExpression(int side);
   StellaType getStellaType();
   bool isTypingCorrect();
   void proxyIdent(Stella::StellaIdent ident);

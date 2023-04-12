@@ -72,8 +72,8 @@ void onFunction(Stella::StellaIdent ident) {
     verifyFunction(currentFunction);
     globalContext.insert(
         {currentFunction->ident,
-         StellaType(StellaType(STELLA_DATA_TYPE_FUN), currentFunction->paramType,
-                    currentFunction->returnType)});
+         StellaType(StellaType(STELLA_DATA_TYPE_FUN),
+                    currentFunction->paramType, currentFunction->returnType)});
   }
 
   auto function = new StellaFunction(ident, globalContext);
@@ -202,11 +202,13 @@ void onDotTuple(int index) {
 }
 
 void onInl() {
-
+  onExpression(new StellaInlInrExpression(1));
+  state = STATE_AWAITING_EXPRESSION;
 }
 
 void onInr() {
-
+  onExpression(new StellaInlInrExpression(2));
+  state = STATE_AWAITING_EXPRESSION;
 }
 
 // Functions below are used for debugging only. They print function and
@@ -221,11 +223,13 @@ void print_expression(StellaExpression *expression, int level) {
   print_indent(level);
   switch (expression->type) {
   case STELLA_EXPRESSION_TYPE_CONST_INT: {
-    std::cout << "CONST INT" << std::endl;
+    std::cout << "CONST INT";
+    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
     break;
   }
   case STELLA_EXPRESSION_TYPE_CONST_BOOL: {
-    std::cout << "CONST BOOL" << std::endl;
+    std::cout << "CONST BOOL";
+    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
     break;
   }
   case STELLA_EXPRESSION_TYPE_ABSTRACTION: {
@@ -239,7 +243,8 @@ void print_expression(StellaExpression *expression, int level) {
     break;
   }
   case STELLA_EXPRESSION_TYPE_APPLICATION: {
-    std::cout << "APPLICATION" << std::endl;
+    std::cout << "APPLICATION";
+    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
     StellaApplicationExpression *expr =
         (StellaApplicationExpression *)expression;
     print_expression(expr->expression1, level + 1);
@@ -247,7 +252,8 @@ void print_expression(StellaExpression *expression, int level) {
     break;
   }
   case STELLA_EXPRESSION_TYPE_CONDITION: {
-    std::cout << "CONDITION" << std::endl;
+    std::cout << "CONDITION";
+    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
     StellaConditionExpression *expr = (StellaConditionExpression *)expression;
     print_expression(expr->condition, level + 1);
     print_expression(expr->expression1, level + 1);
@@ -256,11 +262,13 @@ void print_expression(StellaExpression *expression, int level) {
   }
   case STELLA_EXPRESSION_TYPE_VAR: {
     StellaVarExpression *expr = (StellaVarExpression *)expression;
-    std::cout << "VAR " << expr->ident << std::endl;
+    std::cout << "VAR " << expr->ident;
+    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
     break;
   }
   case STELLA_EXPRESSION_TYPE_NAT_REC: {
-    std::cout << "NAT::REC" << std::endl;
+    std::cout << "NAT::REC";
+    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
     StellaNatRecExpression *expr = (StellaNatRecExpression *)expression;
     print_expression(expr->n, level + 1);
     print_expression(expr->z, level + 1);
@@ -268,26 +276,41 @@ void print_expression(StellaExpression *expression, int level) {
     break;
   }
   case STELLA_EXPRESSION_TYPE_SUCC: {
-    std::cout << "SUCC" << std::endl;
+    std::cout << "SUCC";
+    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
     StellaSuccExpression *expr = (StellaSuccExpression *)expression;
     print_expression(expr->expression, level + 1);
     break;
   }
   case STELLA_EXPRESSION_TYPE_CONST_UNIT: {
-    std::cout << "UNIT" << std::endl;
+    std::cout << "UNIT";
+    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
     break;
   }
   case STELLA_EXPRESSION_TYPE_DOT_TUPLE: {
     StellaDotTupleExpression *expr = (StellaDotTupleExpression *)expression;
-    std::cout << "DOT TUPLE (." << expr->index << ")" << std::endl;
+    std::cout << "DOT TUPLE (." << expr->index << ")";
+    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
     print_expression(expr->expression, level + 1);
     break;
   }
   case STELLA_EXPRESSION_TYPE_TUPLE: {
-    std::cout << "TUPLE" << std::endl;
+    std::cout << "TUPLE";
+    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
     StellaTupleExpression *expr = (StellaTupleExpression *)expression;
     print_expression(expr->expression1, level + 1);
     print_expression(expr->expression2, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_INL_INR: {
+    StellaInlInrExpression *expr = (StellaInlInrExpression *)expression;
+    if (expr->side == 1) {
+      std::cout << "INL";
+    } else {
+      std::cout << "INR";
+    }
+    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    print_expression(expr->expression, level + 1);
     break;
   }
   }

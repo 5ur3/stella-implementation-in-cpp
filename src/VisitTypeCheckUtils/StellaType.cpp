@@ -175,32 +175,54 @@ std::string StellaType::toString() {
 
   std::string typeString;
   switch (this->typeVector[0]) {
-    case STELLA_DATA_TYPE_ANY:
-      typeString = "any";
-      break;
-    case STELLA_DATA_TYPE_FUN:
-      typeString = "fun";
-      break;
-    case STELLA_DATA_TYPE_SUM:
-      typeString = "sum";
-      break;
-    case STELLA_DATA_TYPE_TUPLE:
-      typeString = "tuple";
-      break;
-    case STELLA_DATA_TYPE_BOOL:
-      typeString = "bool";
-      break;
-    case STELLA_DATA_TYPE_NAT:
-      typeString = "nat";
-      break;
-    case STELLA_DATA_TYPE_UNIT:
-      typeString = "unit";
-      break;
+  case STELLA_DATA_TYPE_ANY:
+    typeString = "any";
+    break;
+  case STELLA_DATA_TYPE_FUN:
+    typeString = "fun";
+    break;
+  case STELLA_DATA_TYPE_SUM:
+    typeString = "sum";
+    break;
+  case STELLA_DATA_TYPE_TUPLE:
+    typeString = "tuple";
+    break;
+  case STELLA_DATA_TYPE_BOOL:
+    typeString = "bool";
+    break;
+  case STELLA_DATA_TYPE_NAT:
+    typeString = "nat";
+    break;
+  case STELLA_DATA_TYPE_UNIT:
+    typeString = "unit";
+    break;
   }
 
   if (!this->isComposite()) {
     return typeString;
   }
 
-  return typeString + "(" + this->getSubType(1).toString() + ", " + this->getSubType(2).toString() + ")";
+  return typeString + "(" + this->getSubType(1).toString() + ", " +
+         this->getSubType(2).toString() + ")";
+}
+
+StellaType mergeTypes(StellaType type1, StellaType type2) {
+  if (!type1.isEqual(type2)) {
+    return StellaType();
+  }
+
+  if (type1.typeVector[0] == STELLA_DATA_TYPE_ANY) {
+    return type2;
+  }
+  if (type2.typeVector[0] == STELLA_DATA_TYPE_ANY) {
+    return type1;
+  }
+
+  if (!type1.isComposite()) {
+    return type1;
+  }
+
+  return StellaType(StellaType(type1.typeVector[0]),
+                    mergeTypes(type1.getSubType(1), type2.getSubType(1)),
+                    mergeTypes(type1.getSubType(2), type2.getSubType(2)));
 }

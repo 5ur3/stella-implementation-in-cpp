@@ -5,7 +5,7 @@ StellaConditionExpression::StellaConditionExpression() {
   this->type = STELLA_EXPRESSION_TYPE_CONDITION;
 }
 StellaType StellaConditionExpression::getStellaType() {
-  return expression1->getStellaType();
+  return mergeTypes(expression1->getStellaType(), expression2->getStellaType());
 }
 bool StellaConditionExpression::isTypingCorrect() {
   if (!this->isParsed()) {
@@ -17,10 +17,12 @@ bool StellaConditionExpression::isTypingCorrect() {
       !this->expression1->isTypingCorrect() ||
       !this->expression2->isTypingCorrect()) {
     isCorrect = false;
-  } else if (!condition->getStellaType().isEqual(StellaType(STELLA_DATA_TYPE_BOOL))) {
+  } else if (!condition->getStellaType().isEqual(
+                 StellaType(STELLA_DATA_TYPE_BOOL))) {
     std::cout << "Type error: condition statement is not bool" << std::endl;
     isCorrect = false;
-  } else if (!expression1->getStellaType().isEqual(expression2->getStellaType())) {
+  } else if (!expression1->getStellaType().isEqual(
+                 expression2->getStellaType())) {
     std::cout << "Type error: unable to infer type of condition expression "
                  "(condition expression types are mismatched)"
               << std::endl;

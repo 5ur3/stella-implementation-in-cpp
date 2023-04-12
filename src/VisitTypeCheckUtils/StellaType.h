@@ -77,4 +77,6 @@ public:
   StellaType getSumType(int index);
 };
 
+StellaType mergeTypes(StellaType type1, StellaType type2);
+
 #endif

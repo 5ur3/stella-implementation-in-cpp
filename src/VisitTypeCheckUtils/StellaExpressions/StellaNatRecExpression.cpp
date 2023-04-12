@@ -45,7 +45,8 @@ bool StellaNatRecExpression::isTypingCorrect() {
 
   return isCorrect;
 }
-void StellaNatRecExpression::proxyExpressionTypeToken(StellaDataType typeToken) {
+void StellaNatRecExpression::proxyExpressionTypeToken(
+    StellaDataType typeToken) {
   if (!this->n->isParsed()) {
     return this->n->proxyExpressionTypeToken(typeToken);
   }

@@ -6,7 +6,8 @@ StellaTupleExpression::StellaTupleExpression() {
 }
 
 StellaType StellaTupleExpression::getStellaType() {
-  return StellaType(StellaType(STELLA_DATA_TYPE_TUPLE), this->expression1->getStellaType(),
+  return StellaType(StellaType(STELLA_DATA_TYPE_TUPLE),
+                    this->expression1->getStellaType(),
                     this->expression2->getStellaType());
 }
 
