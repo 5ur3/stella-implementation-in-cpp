@@ -1,5 +1,4 @@
 #include "../StellaExpression.h"
-#include "../StellaType.h"
 #include <iostream>
 
 StellaVarExpression::StellaVarExpression(Stella::StellaIdent ident) {

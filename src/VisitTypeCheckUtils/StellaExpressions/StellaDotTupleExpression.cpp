@@ -38,7 +38,7 @@ void StellaDotTupleExpression::proxyIdent(Stella::StellaIdent ident) {
   return this->expression->proxyIdent(ident);
 }
 
-void StellaDotTupleExpression::proxyExpressionTypeToken(std::string typeToken) {
+void StellaDotTupleExpression::proxyExpressionTypeToken(StellaDataType typeToken) {
   return this->expression->proxyExpressionTypeToken(typeToken);
 }
 

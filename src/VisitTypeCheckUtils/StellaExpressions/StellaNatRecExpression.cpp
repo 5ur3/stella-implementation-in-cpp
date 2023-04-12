@@ -15,25 +15,26 @@ bool StellaNatRecExpression::isTypingCorrect() {
   bool isCorrect = true;
   if (!n->isTypingCorrect() || !z->isTypingCorrect() || !s->isTypingCorrect()) {
     isCorrect = false;
-  } else if (n->getStellaType() != StellaType("nat")) {
+  } else if (!n->getStellaType().isEqual(StellaType(STELLA_DATA_TYPE_NAT))) {
     std::cout << "Type error: Nat::rec \"n\" is not Nat" << std::endl;
     isCorrect = false;
   } else if (!s->getStellaType().isFunction() ||
              !s->getStellaType().getReturnType().isFunction() ||
-             s->getStellaType().getParamType() != StellaType("nat") ||
-             s->getStellaType().getReturnType().getParamType() !=
-                 s->getStellaType().getReturnType().getReturnType()) {
+             !s->getStellaType().getParamType().isEqual(
+                 StellaType(STELLA_DATA_TYPE_NAT)) ||
+             !s->getStellaType().getReturnType().getParamType().isEqual(
+                 s->getStellaType().getReturnType().getReturnType())) {
     std::cout << "Type error: Nat::rec \"s\" is not a function with signature "
                  "fn(Nat) "
                  "-> (fn(T) -> T)"
               << std::endl;
     isCorrect = false;
-  } else if (z->getStellaType() !=
-             s->getStellaType().getReturnType().getParamType()) {
+  } else if (!z->getStellaType().isEqual(
+                 s->getStellaType().getReturnType().getParamType())) {
     std::cout
         << "Type error: Nat::rec \"z\" type if mismatched (expected \"" +
-               s->getStellaType().getReturnType().getParamType().type_string +
-               "\", got \"" + z->getStellaType().type_string + "\")"
+               s->getStellaType().getReturnType().getParamType().toString() +
+               "\", got \"" + z->getStellaType().toString() + "\")"
         << std::endl;
     isCorrect = false;
   }
@@ -44,7 +45,7 @@ bool StellaNatRecExpression::isTypingCorrect() {
 
   return isCorrect;
 }
-void StellaNatRecExpression::proxyExpressionTypeToken(std::string typeToken) {
+void StellaNatRecExpression::proxyExpressionTypeToken(StellaDataType typeToken) {
   if (!this->n->isParsed()) {
     return this->n->proxyExpressionTypeToken(typeToken);
   }

@@ -1,8 +1,8 @@
 #include "StellaType.h"
 #include <deque>
+#include <iostream>
 #include <string>
 #include <vector>
-#include <iostream>
 
 // helper method. Splits string into vector of strings by a whitespace
 std::vector<std::string> split_string(std::string str) {
@@ -29,59 +29,57 @@ void onTypeParsingEnd();
 
 // Documentation of the class methods is in StellaType.h
 bool StellaType::isCompletedRecursive(
-    std::deque<std::string> &remainingTokens) {
+    std::deque<StellaDataType> &remainingTokens) {
   if (remainingTokens.empty()) {
     return false;
   }
 
-  std::string token = remainingTokens.front();
+  StellaDataType token = remainingTokens.front();
   remainingTokens.pop_front();
 
-  if (token == "unit") {
+  switch (token) {
+  case STELLA_DATA_TYPE_UNIT:
     return true;
-  }
-  if (token == "nat") {
+  case STELLA_DATA_TYPE_BOOL:
     return true;
-  }
-  if (token == "bool") {
+  case STELLA_DATA_TYPE_NAT:
     return true;
-  }
-  if (token == "fun") {
+  case STELLA_DATA_TYPE_ANY:
+    return true;
+  case STELLA_DATA_TYPE_FUN:
+    return isCompletedRecursive(remainingTokens) &&
+           isCompletedRecursive(remainingTokens);
+  case STELLA_DATA_TYPE_TUPLE:
+    return isCompletedRecursive(remainingTokens) &&
+           isCompletedRecursive(remainingTokens);
+  case STELLA_DATA_TYPE_SUM:
     return isCompletedRecursive(remainingTokens) &&
            isCompletedRecursive(remainingTokens);
   }
-  if (token == "tuple") {
-    return isCompletedRecursive(remainingTokens) &&
-           isCompletedRecursive(remainingTokens);
-  }
-  return false;
 }
 
 bool StellaType::isCompleted() {
-  std::vector<std::string> type_vector = split_string(this->type_string);
-
-  std::deque<std::string> tokens;
-  tokens.insert(tokens.begin(), type_vector.begin(), type_vector.end());
+  std::deque<StellaDataType> tokens;
+  tokens.insert(tokens.begin(), this->typeVector.begin(),
+                this->typeVector.end());
   return isCompletedRecursive(tokens);
 }
 
 StellaType::StellaType(){};
-StellaType::StellaType(std::string type_string) {
-  this->type_string = type_string;
+StellaType::StellaType(StellaDataType token) {
+  this->typeVector.push_back(token);
 };
-StellaType::StellaType(StellaType baseType, StellaType arg1,
-                       StellaType arg2) {
-  this->type_string = baseType.type_string + " " + arg1.type_string + " " +
-                      arg2.type_string;
+StellaType::StellaType(StellaType baseType, StellaType arg1, StellaType arg2) {
+  this->typeVector.insert(this->typeVector.end(), baseType.typeVector.begin(),
+                          baseType.typeVector.end());
+  this->typeVector.insert(this->typeVector.end(), arg1.typeVector.begin(),
+                          arg1.typeVector.end());
+  this->typeVector.insert(this->typeVector.end(), arg2.typeVector.begin(),
+                          arg2.typeVector.end());
 };
 
-void StellaType::parse(std::string typeToken) {
-  if (type_string == "") {
-    type_string = typeToken;
-  } else {
-    type_string += " ";
-    type_string += typeToken;
-  }
+void StellaType::parse(StellaDataType typeToken) {
+  this->typeVector.push_back(typeToken);
 
   if (isCompleted()) {
     onTypeParsingEnd();
@@ -89,67 +87,120 @@ void StellaType::parse(std::string typeToken) {
 }
 
 bool StellaType::isFunction() {
-  std::vector<std::string> type_vector = split_string(this->type_string);
-  return this->isCompleted() && type_vector[0] == "fun";
+  return this->isCompleted() && this->typeVector[0] == STELLA_DATA_TYPE_FUN;
 }
 
 bool StellaType::isTuple() {
-  std::vector<std::string> type_vector = split_string(this->type_string);
-  return this->isCompleted() && type_vector[0] == "tuple";
+  return this->isCompleted() && this->typeVector[0] == STELLA_DATA_TYPE_TUPLE;
 }
 
-StellaType StellaType::getParamType() {
-  std::vector<std::string> type_vector = split_string(this->type_string);
-  if (!this->isCompleted() || type_vector[0] != "fun") {
-    return StellaType();
-  }
-
-  StellaType paramType;
-  for (int i = 1; !paramType.isCompleted(); i++) {
-    paramType.parse(type_vector[i]);
-  }
-  return paramType;
+bool StellaType::isSumType() {
+  return this->isCompleted() && this->typeVector[0] == STELLA_DATA_TYPE_SUM;
 }
 
-StellaType StellaType::getReturnType() {
-  std::vector<std::string> type_vector = split_string(this->type_string);
-  if (!this->isCompleted() || type_vector[0] != "fun") {
-    return StellaType();
-  }
-
-  int i;
-  StellaType paramType;
-  for (i = 1; !paramType.isCompleted(); i++) {
-    paramType.parse(type_vector[i]);
-  }
-  StellaType returnType;
-  for (int j = i; j < type_vector.size(); j++) {
-    returnType.parse(type_vector[j]);
-  }
-  return returnType;
+bool StellaType::isComposite() {
+  return this->isFunction() || this->isTuple() || this->isSumType();
 }
 
-StellaType StellaType::getTupleType(int index) {
-  std::vector<std::string> type_vector = split_string(this->type_string);
-  if (!this->isCompleted() || type_vector[0] != "tuple") {
-    return StellaType();
-  }
-
+StellaType StellaType::getSubType(int index) {
   int counter = 1;
   StellaType type;
   for (int i = 0; i < index; i++) {
     type = StellaType();
     for (; !type.isCompleted(); counter++) {
-      type.parse(type_vector[counter]);
+      type.parse(this->typeVector[counter]);
     }
   }
   return type;
 }
 
-bool StellaType::operator==(const StellaType &stellaType) const {
-  return (this->type_string == stellaType.type_string);
+StellaType StellaType::getParamType() {
+  if (this->isFunction()) {
+    return this->getSubType(1);
+  }
+  return StellaType();
 }
 
-bool StellaType::operator!=(const StellaType &stellaType) const {
-  return (this->type_string != stellaType.type_string);
+StellaType StellaType::getReturnType() {
+  if (this->isFunction()) {
+    return this->getSubType(2);
+  }
+  return StellaType();
+}
+
+StellaType StellaType::getTupleType(int index) {
+  if (this->isTuple()) {
+    return this->getSubType(index);
+  }
+  return StellaType();
+}
+
+StellaType StellaType::getSumType(int index) {
+  if (this->isSumType()) {
+    return this->getSubType(index);
+  }
+  return StellaType();
+}
+
+bool StellaType::isEqual(StellaType stellaType) {
+  if (!this->isCompleted() || !stellaType.isCompleted()) {
+    return false;
+  }
+
+  if (this->typeVector[0] == STELLA_DATA_TYPE_ANY ||
+      stellaType.typeVector[0] == STELLA_DATA_TYPE_ANY) {
+    return true;
+  }
+
+  if (this->isComposite() != stellaType.isComposite()) {
+    return false;
+  }
+
+  if (!this->isComposite() && this->typeVector[0] == stellaType.typeVector[0]) {
+    return true;
+  }
+
+  if (this->typeVector[0] == stellaType.typeVector[0]) {
+    return this->getSubType(1).isEqual(stellaType.getSubType(1)) &&
+           this->getSubType(2).isEqual(stellaType.getSubType(2));
+  }
+
+  return false;
+}
+
+std::string StellaType::toString() {
+  if (!this->isCompleted()) {
+    return "";
+  }
+
+  std::string typeString;
+  switch (this->typeVector[0]) {
+    case STELLA_DATA_TYPE_ANY:
+      typeString = "any";
+      break;
+    case STELLA_DATA_TYPE_FUN:
+      typeString = "fun";
+      break;
+    case STELLA_DATA_TYPE_SUM:
+      typeString = "sum";
+      break;
+    case STELLA_DATA_TYPE_TUPLE:
+      typeString = "tuple";
+      break;
+    case STELLA_DATA_TYPE_BOOL:
+      typeString = "bool";
+      break;
+    case STELLA_DATA_TYPE_NAT:
+      typeString = "nat";
+      break;
+    case STELLA_DATA_TYPE_UNIT:
+      typeString = "unit";
+      break;
+  }
+
+  if (!this->isComposite()) {
+    return typeString;
+  }
+
+  return typeString + "(" + this->getSubType(1).toString() + ", " + this->getSubType(2).toString() + ")";
 }

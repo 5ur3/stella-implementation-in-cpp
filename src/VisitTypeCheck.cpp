@@ -72,7 +72,7 @@ void onFunction(Stella::StellaIdent ident) {
     verifyFunction(currentFunction);
     globalContext.insert(
         {currentFunction->ident,
-         StellaType(StellaType("fun"), currentFunction->paramType,
+         StellaType(StellaType(STELLA_DATA_TYPE_FUN), currentFunction->paramType,
                     currentFunction->returnType)});
   }
 
@@ -103,7 +103,7 @@ void onIdent(Stella::StellaIdent ident) {
   }
 }
 
-void onType(std::string type) {
+void onType(StellaDataType type) {
   switch (state) {
   case STATE_PARSING_FUNCTION_PARAM_TYPE: {
     currentFunction->assembleParamType(type);
@@ -201,6 +201,14 @@ void onDotTuple(int index) {
   state = STATE_AWAITING_EXPRESSION;
 }
 
+void onInl() {
+
+}
+
+void onInr() {
+
+}
+
 // Functions below are used for debugging only. They print function and
 // expression type signatures
 void print_indent(int level) {
@@ -224,8 +232,8 @@ void print_expression(StellaExpression *expression, int level) {
     StellaAbstractionExpression *expr =
         (StellaAbstractionExpression *)expression;
     std::cout << "ABSTRACTION(" << expr->paramIdent << ": "
-              << expr->paramType.type_string
-              << "): " << expr->expression->getStellaType().type_string
+              << expr->paramType.toString()
+              << "): " << expr->expression->getStellaType().toString()
               << std::endl;
     print_expression(expr->expression, level + 1);
     break;
@@ -287,8 +295,8 @@ void print_expression(StellaExpression *expression, int level) {
 
 void print_function(StellaFunction *function) {
   std::cout << function->ident << "(" << function->paramIdent << ": "
-            << function->paramType.type_string
-            << "): " << function->returnType.type_string << std::endl;
+            << function->paramType.toString()
+            << "): " << function->returnType.toString() << std::endl;
 
   print_expression(function->expression, 1);
 }
@@ -426,7 +434,7 @@ void VisitTypeCheck::visitSomeThrowType(SomeThrowType *some_throw_type) {
 }
 
 void VisitTypeCheck::visitTypeFun(TypeFun *type_fun) {
-  onType("fun");
+  onType(STELLA_DATA_TYPE_FUN);
 
   if (type_fun->listtype_)
     type_fun->listtype_->accept(this);
@@ -443,7 +451,7 @@ void VisitTypeCheck::visitTypeRec(TypeRec *type_rec) {
 }
 
 void VisitTypeCheck::visitTypeSum(TypeSum *type_sum) {
-  /* Code For TypeSum Goes Here */
+  onType(STELLA_DATA_TYPE_SUM);
 
   if (type_sum->type_1)
     type_sum->type_1->accept(this);
@@ -452,7 +460,7 @@ void VisitTypeCheck::visitTypeSum(TypeSum *type_sum) {
 }
 
 void VisitTypeCheck::visitTypeTuple(TypeTuple *type_tuple) {
-  onType("tuple");
+  onType(STELLA_DATA_TYPE_TUPLE);
 
   if (type_tuple->listtype_)
     type_tuple->listtype_->accept(this);
@@ -480,17 +488,17 @@ void VisitTypeCheck::visitTypeList(TypeList *type_list) {
 }
 
 void VisitTypeCheck::visitTypeBool(TypeBool *type_bool) {
-  onType("bool");
+  onType(STELLA_DATA_TYPE_BOOL);
   /* Code For TypeBool Goes Here */
 }
 
 void VisitTypeCheck::visitTypeNat(TypeNat *type_nat) {
-  onType("nat");
+  onType(STELLA_DATA_TYPE_NAT);
   /* Code For TypeNat Goes Here */
 }
 
 void VisitTypeCheck::visitTypeUnit(TypeUnit *type_unit) {
-  onType("unit");
+  onType(STELLA_DATA_TYPE_UNIT);
   /* Code For TypeUnit Goes Here */
 }
 
@@ -901,14 +909,14 @@ void VisitTypeCheck::visitTail(Tail *tail) {
 }
 
 void VisitTypeCheck::visitInl(Inl *inl) {
-  /* Code For Inl Goes Here */
+  onInl();
 
   if (inl->expr_)
     inl->expr_->accept(this);
 }
 
 void VisitTypeCheck::visitInr(Inr *inr) {
-  /* Code For Inr Goes Here */
+  onInr();
 
   if (inr->expr_)
     inr->expr_->accept(this);

@@ -17,10 +17,10 @@ bool StellaConditionExpression::isTypingCorrect() {
       !this->expression1->isTypingCorrect() ||
       !this->expression2->isTypingCorrect()) {
     isCorrect = false;
-  } else if (condition->getStellaType() != StellaType("bool")) {
+  } else if (!condition->getStellaType().isEqual(StellaType(STELLA_DATA_TYPE_BOOL))) {
     std::cout << "Type error: condition statement is not bool" << std::endl;
     isCorrect = false;
-  } else if (expression1->getStellaType() != expression2->getStellaType()) {
+  } else if (!expression1->getStellaType().isEqual(expression2->getStellaType())) {
     std::cout << "Type error: unable to infer type of condition expression "
                  "(condition expression types are mismatched)"
               << std::endl;
@@ -43,7 +43,7 @@ void StellaConditionExpression::proxyIdent(Stella::StellaIdent ident) {
   this->expression2->proxyIdent(ident);
 }
 void StellaConditionExpression::proxyExpressionTypeToken(
-    std::string typeToken) {
+    StellaDataType typeToken) {
   if (!this->condition->isParsed()) {
     return this->condition->proxyExpressionTypeToken(typeToken);
   }

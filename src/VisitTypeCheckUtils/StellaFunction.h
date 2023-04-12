@@ -18,8 +18,8 @@ public:
   StellaFunction(Stella::StellaIdent ident,
                  std::map<Stella::StellaIdent, StellaType> context);
   void setParamIdent(Stella::StellaIdent paramName);
-  void assembleParamType(std::string paramTypeToken);
-  void assembleReturnType(std::string returnTypeToken);
+  void assembleParamType(StellaDataType paramTypeToken);
+  void assembleReturnType(StellaDataType returnTypeToken);
   void setExpression(StellaExpression *expression);
   bool isTypingCorrect();
 
@@ -29,7 +29,7 @@ public:
   // and expression for "0" will be proxied to "succ" expression via
   // "proxyExpression" method below and can be accessed as
   // "StellaFunction.expression.expression"
-  void proxyExpressionTypeToken(std::string typeToken);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
   void proxyExpression(StellaExpression *expression);
   void proxyIdent(Stella::StellaIdent ident);
 };

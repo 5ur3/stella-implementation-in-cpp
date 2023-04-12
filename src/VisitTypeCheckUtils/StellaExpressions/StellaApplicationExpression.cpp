@@ -21,12 +21,12 @@ bool StellaApplicationExpression::isTypingCorrect() {
   } else if (!expression1->getStellaType().isFunction()) {
     std::cout << "Type error: applying non function" << std::endl;
     isCorrect = false;
-  } else if (expression1->getStellaType().getParamType() !=
-             expression2->getStellaType()) {
+  } else if (!expression1->getStellaType().getParamType().isEqual(
+                 expression2->getStellaType())) {
     std::cout << "Type error: applying type \""
-              << expression2->getStellaType().type_string << "\""
+              << expression2->getStellaType().toString() << "\""
               << " to a function expecting \""
-              << expression1->getStellaType().getParamType().type_string << "\""
+              << expression1->getStellaType().getParamType().toString() << "\""
               << std::endl;
     isCorrect = false;
   }
@@ -46,7 +46,7 @@ void StellaApplicationExpression::proxyIdent(Stella::StellaIdent ident) {
 }
 
 void StellaApplicationExpression::proxyExpressionTypeToken(
-    std::string typeToken) {
+    StellaDataType typeToken) {
   if (!this->expression1->isParsed()) {
     return this->expression1->proxyExpressionTypeToken(typeToken);
   }

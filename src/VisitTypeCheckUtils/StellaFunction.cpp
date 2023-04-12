@@ -11,10 +11,10 @@ StellaFunction::StellaFunction(
 void StellaFunction::setParamIdent(Stella::StellaIdent paramIdent) {
   this->paramIdent = paramIdent;
 }
-void StellaFunction::assembleParamType(std::string paramTypeToken) {
+void StellaFunction::assembleParamType(StellaDataType paramTypeToken) {
   this->paramType.parse(paramTypeToken);
 }
-void StellaFunction::assembleReturnType(std::string returnTypeToken) {
+void StellaFunction::assembleReturnType(StellaDataType returnTypeToken) {
   this->returnType.parse(returnTypeToken);
 }
 void StellaFunction::setExpression(StellaExpression *expression) {
@@ -22,7 +22,7 @@ void StellaFunction::setExpression(StellaExpression *expression) {
   this->expression->setContext(this->context);
   this->expression->addContext(this->paramIdent, this->paramType);
 }
-void StellaFunction::proxyExpressionTypeToken(std::string typeToken) {
+void StellaFunction::proxyExpressionTypeToken(StellaDataType typeToken) {
   this->expression->proxyExpressionTypeToken(typeToken);
 }
 void StellaFunction::proxyExpression(StellaExpression *expression) {
@@ -35,7 +35,7 @@ bool StellaFunction::isTypingCorrect() {
   bool isCorrect = true;
   if (!this->expression->isTypingCorrect()) {
     isCorrect = false;
-  } else if (this->returnType != this->expression->getStellaType()) {
+  } else if (!this->returnType.isEqual(this->expression->getStellaType())) {
     std::cout << "Type error: function return and function expression types "
                  "are mismatched"
               << std::endl;

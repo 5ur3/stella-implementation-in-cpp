@@ -44,7 +44,7 @@ public:
   // For those expressions, default
   // implementations of methods below are written here.
   virtual void proxyIdent(Stella::StellaIdent ident){};
-  virtual void proxyExpressionTypeToken(std::string typeToken){};
+  virtual void proxyExpressionTypeToken(StellaDataType typeToken){};
   virtual void proxyExpression(StellaExpression *expression){};
   virtual bool isParsed() { return true; };
 
@@ -100,7 +100,7 @@ public:
   StellaType getStellaType();
 
   bool isTypingCorrect();
-  void proxyExpressionTypeToken(std::string typeToken);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
   void proxyExpression(StellaExpression *expression);
   void proxyIdent(Stella::StellaIdent ident);
   bool isParsed();
@@ -115,7 +115,7 @@ public:
   StellaNatRecExpression();
   StellaType getStellaType();
   bool isTypingCorrect();
-  void proxyExpressionTypeToken(std::string typeToken);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
   void proxyExpression(StellaExpression *expression);
   void proxyIdent(Stella::StellaIdent ident);
   bool isParsed();
@@ -130,7 +130,7 @@ public:
   StellaAbstractionExpression();
   StellaType getStellaType();
   bool isTypingCorrect();
-  void proxyExpressionTypeToken(std::string typeToken);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
   void proxyExpression(StellaExpression *expression);
   void proxyIdent(Stella::StellaIdent ident);
   bool isParsed();
@@ -145,7 +145,7 @@ public:
   StellaType getStellaType();
   bool isTypingCorrect();
   void proxyIdent(Stella::StellaIdent ident);
-  void proxyExpressionTypeToken(std::string typeToken);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
   void proxyExpression(StellaExpression *expression);
   bool isParsed();
 };
@@ -159,7 +159,7 @@ public:
   StellaType getStellaType();
   bool isTypingCorrect();
   void proxyIdent(Stella::StellaIdent ident);
-  void proxyExpressionTypeToken(std::string typeToken);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
   void proxyExpression(StellaExpression *expression);
   bool isParsed();
 };
@@ -173,7 +173,7 @@ public:
   StellaType getStellaType();
   bool isTypingCorrect();
   void proxyIdent(Stella::StellaIdent ident);
-  void proxyExpressionTypeToken(std::string typeToken);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
   void proxyExpression(StellaExpression *expression);
   bool isParsed();
 };
@@ -188,7 +188,7 @@ public:
   StellaType getStellaType();
   bool isTypingCorrect();
   void proxyIdent(Stella::StellaIdent ident);
-  void proxyExpressionTypeToken(std::string typeToken);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
   void proxyExpression(StellaExpression *expression);
   bool isParsed();
 };

@@ -5,7 +5,7 @@ StellaConstBoolExpression::StellaConstBoolExpression() {
 }
 
 StellaType StellaConstBoolExpression::getStellaType() {
-  return StellaType("bool");
+  return StellaType(STELLA_DATA_TYPE_BOOL);
 }
 
 bool StellaConstBoolExpression::isTypingCorrect() { return true; }
