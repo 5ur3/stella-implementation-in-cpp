@@ -408,7 +408,7 @@ void onEnd() {
   }
 
   // Try this if you want to see what typing tree looks like:
-  print_function(stellaFunctions["test"]);
+  // print_function(stellaFunctions["main"]);
 }
 
 // Code below was not changed except for calling state-machine controlling
