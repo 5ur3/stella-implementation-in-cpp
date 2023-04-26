@@ -211,6 +211,31 @@ void onInr() {
   state = STATE_AWAITING_EXPRESSION;
 }
 
+void onMatch(int size) {
+  onExpression(new StellaMatchExpression(size));
+  state = STATE_AWAITING_EXPRESSION;
+}
+
+void onMatchCase() {
+  onExpression(new StellaMatchCaseExpression());
+  state = STATE_AWAITING_EXPRESSION;
+}
+
+void onPatternInl() {
+  onExpression(new StellaPatternInlInrExpression(1));
+  state = STATE_AWAITING_EXPRESSION;
+}
+
+void onPatternInr() {
+  onExpression(new StellaPatternInlInrExpression(2));
+  state = STATE_AWAITING_EXPRESSION;
+}
+
+void onPatternVar(Stella::StellaIdent ident) {
+  onExpression(new StellaPatternVarExpression(ident));
+  state = STATE_AWAITING_EXPRESSION;
+}
+
 // Functions below are used for debugging only. They print function and
 // expression type signatures
 void print_indent(int level) {
@@ -224,12 +249,14 @@ void print_expression(StellaExpression *expression, int level) {
   switch (expression->type) {
   case STELLA_EXPRESSION_TYPE_CONST_INT: {
     std::cout << "CONST INT";
-    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     break;
   }
   case STELLA_EXPRESSION_TYPE_CONST_BOOL: {
     std::cout << "CONST BOOL";
-    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     break;
   }
   case STELLA_EXPRESSION_TYPE_ABSTRACTION: {
@@ -244,7 +271,8 @@ void print_expression(StellaExpression *expression, int level) {
   }
   case STELLA_EXPRESSION_TYPE_APPLICATION: {
     std::cout << "APPLICATION";
-    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     StellaApplicationExpression *expr =
         (StellaApplicationExpression *)expression;
     print_expression(expr->expression1, level + 1);
@@ -253,7 +281,8 @@ void print_expression(StellaExpression *expression, int level) {
   }
   case STELLA_EXPRESSION_TYPE_CONDITION: {
     std::cout << "CONDITION";
-    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     StellaConditionExpression *expr = (StellaConditionExpression *)expression;
     print_expression(expr->condition, level + 1);
     print_expression(expr->expression1, level + 1);
@@ -263,12 +292,14 @@ void print_expression(StellaExpression *expression, int level) {
   case STELLA_EXPRESSION_TYPE_VAR: {
     StellaVarExpression *expr = (StellaVarExpression *)expression;
     std::cout << "VAR " << expr->ident;
-    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     break;
   }
   case STELLA_EXPRESSION_TYPE_NAT_REC: {
     std::cout << "NAT::REC";
-    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     StellaNatRecExpression *expr = (StellaNatRecExpression *)expression;
     print_expression(expr->n, level + 1);
     print_expression(expr->z, level + 1);
@@ -277,26 +308,30 @@ void print_expression(StellaExpression *expression, int level) {
   }
   case STELLA_EXPRESSION_TYPE_SUCC: {
     std::cout << "SUCC";
-    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     StellaSuccExpression *expr = (StellaSuccExpression *)expression;
     print_expression(expr->expression, level + 1);
     break;
   }
   case STELLA_EXPRESSION_TYPE_CONST_UNIT: {
     std::cout << "UNIT";
-    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     break;
   }
   case STELLA_EXPRESSION_TYPE_DOT_TUPLE: {
     StellaDotTupleExpression *expr = (StellaDotTupleExpression *)expression;
     std::cout << "DOT TUPLE (." << expr->index << ")";
-    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     print_expression(expr->expression, level + 1);
     break;
   }
   case STELLA_EXPRESSION_TYPE_TUPLE: {
     std::cout << "TUPLE";
-    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     StellaTupleExpression *expr = (StellaTupleExpression *)expression;
     print_expression(expr->expression1, level + 1);
     print_expression(expr->expression2, level + 1);
@@ -309,8 +344,50 @@ void print_expression(StellaExpression *expression, int level) {
     } else {
       std::cout << "INR";
     }
-    std::cout << " : (" << expression->getStellaType().toString() << ")" << std::endl;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     print_expression(expr->expression, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_MATCH: {
+    std::cout << "MATCH";
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    StellaMatchExpression *expr = (StellaMatchExpression *)expression;
+    print_expression(expr->matchExpression, level + 1);
+    for (int i = 0; i < expr->expressions.size(); i++) {
+      print_expression(expr->expressions[i], level + 1);
+    }
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_MATCH_CASE: {
+    std::cout << "MATCH CASE";
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    StellaMatchCaseExpression *expr = (StellaMatchCaseExpression *)expression;
+    print_expression(expr->match, level + 1);
+    print_expression(expr->expression, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_PATTERN_INL_INR: {
+    StellaPatternInlInrExpression *expr =
+        (StellaPatternInlInrExpression *)expression;
+    if (expr->side == 1) {
+      std::cout << "PATTERN INL";
+    } else {
+      std::cout << "PATTERN INR";
+    }
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    print_expression(expr->expression, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_PATTERN_VAR: {
+    StellaPatternVarExpression *expr =
+        (StellaPatternVarExpression *)expression;
+    std::cout << "PATTERN VAR " << expr->ident;
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
     break;
   }
   }
@@ -331,7 +408,7 @@ void onEnd() {
   }
 
   // Try this if you want to see what typing tree looks like:
-  // print_function(stellaFunctions["main"]);
+  print_function(stellaFunctions["test"]);
 }
 
 // Code below was not changed except for calling state-machine controlling
@@ -532,7 +609,7 @@ void VisitTypeCheck::visitTypeVar(TypeVar *type_var) {
 }
 
 void VisitTypeCheck::visitAMatchCase(AMatchCase *a_match_case) {
-  /* Code For AMatchCase Goes Here */
+  onMatchCase();
 
   if (a_match_case->pattern_)
     a_match_case->pattern_->accept(this);
@@ -582,14 +659,14 @@ void VisitTypeCheck::visitPatternVariant(PatternVariant *pattern_variant) {
 }
 
 void VisitTypeCheck::visitPatternInl(PatternInl *pattern_inl) {
-  /* Code For PatternInl Goes Here */
+  onPatternInl();
 
   if (pattern_inl->pattern_)
     pattern_inl->pattern_->accept(this);
 }
 
 void VisitTypeCheck::visitPatternInr(PatternInr *pattern_inr) {
-  /* Code For PatternInr Goes Here */
+  onPatternInr();
 
   if (pattern_inr->pattern_)
     pattern_inr->pattern_->accept(this);
@@ -651,7 +728,7 @@ void VisitTypeCheck::visitPatternSucc(PatternSucc *pattern_succ) {
 }
 
 void VisitTypeCheck::visitPatternVar(PatternVar *pattern_var) {
-  /* Code For PatternVar Goes Here */
+  onPatternVar(pattern_var->stellaident_);
 
   visitStellaIdent(pattern_var->stellaident_);
 }
@@ -793,7 +870,7 @@ void VisitTypeCheck::visitVariant(Variant *variant) {
 }
 
 void VisitTypeCheck::visitMatch(Match *match) {
-  /* Code For Match Goes Here */
+  onMatch(match->listmatchcase_->size());
 
   if (match->expr_)
     match->expr_->accept(this);

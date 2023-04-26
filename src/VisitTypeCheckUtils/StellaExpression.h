@@ -18,7 +18,11 @@ enum StellaExpressionType {
   STELLA_EXPRESSION_TYPE_CONST_UNIT = 8,
   STELLA_EXPRESSION_TYPE_TUPLE = 9,
   STELLA_EXPRESSION_TYPE_DOT_TUPLE = 10,
-  STELLA_EXPRESSION_TYPE_INL_INR = 11
+  STELLA_EXPRESSION_TYPE_INL_INR = 11,
+  STELLA_EXPRESSION_TYPE_MATCH = 12,
+  STELLA_EXPRESSION_TYPE_MATCH_CASE = 13,
+  STELLA_EXPRESSION_TYPE_PATTERN_INL_INR = 14,
+  STELLA_EXPRESSION_TYPE_PATTERN_VAR = 15
 };
 
 // Representation of any stella expression
@@ -48,6 +52,7 @@ public:
   virtual void proxyExpressionTypeToken(StellaDataType typeToken){};
   virtual void proxyExpression(StellaExpression *expression){};
   virtual bool isParsed() { return true; };
+  virtual bool isPattern() { return false; };
 
   // Context setter methods are common among all StellaExpression
   // implementations
@@ -206,6 +211,59 @@ public:
   void proxyExpressionTypeToken(StellaDataType typeToken);
   void proxyExpression(StellaExpression *expression);
   bool isParsed();
+};
+
+class StellaMatchExpression : public StellaExpression {
+public:
+  StellaExpression *matchExpression = NULL;
+  std::vector<StellaExpression *> expressions;
+
+  StellaMatchExpression(int size);
+  StellaType getStellaType();
+  bool isTypingCorrect();
+  void proxyIdent(Stella::StellaIdent ident);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
+  void proxyExpression(StellaExpression *expression);
+  bool isParsed();
+};
+
+class StellaMatchCaseExpression : public StellaExpression {
+public:
+  StellaExpression *match = NULL;
+  StellaExpression *expression = NULL;
+
+  StellaMatchCaseExpression();
+  StellaType getStellaType();
+  bool isTypingCorrect();
+  void proxyIdent(Stella::StellaIdent ident);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
+  void proxyExpression(StellaExpression *expression);
+  bool isParsed();
+};
+
+class StellaPatternInlInrExpression : public StellaExpression {
+public:
+  int side = 0;
+  StellaExpression *expression = NULL;
+
+  StellaPatternInlInrExpression(int side);
+  StellaType getStellaType();
+  bool isTypingCorrect();
+  void proxyIdent(Stella::StellaIdent ident);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
+  void proxyExpression(StellaExpression *expression);
+  bool isParsed();
+  bool isPattern();
+};
+
+class StellaPatternVarExpression : public StellaExpression {
+public:
+  Stella::StellaIdent ident;
+
+  StellaPatternVarExpression(Stella::StellaIdent ident);
+  StellaType getStellaType();
+  bool isTypingCorrect();
+  bool isPattern();
 };
 
 #endif

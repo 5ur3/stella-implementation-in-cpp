@@ -36,6 +36,10 @@ set (SRCS
   src/VisitTypeCheckUtils/StellaExpressions/StellaTupleExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaDotTupleExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaInlInrExpression.cpp
+  src/VisitTypeCheckUtils/StellaExpressions/StellaMatchExpression.cpp
+  src/VisitTypeCheckUtils/StellaExpressions/StellaMatchCaseExpression.cpp
+  src/VisitTypeCheckUtils/StellaExpressions/StellaPatternInlInrExpression.cpp
+  src/VisitTypeCheckUtils/StellaExpressions/StellaPatternVarExpression.cpp
   src/VisitTypeCheckUtils/StellaFunction.h
   src/VisitTypeCheckUtils/StellaFunction.cpp
   src/VisitTypeCheck.h
@@ -93,4 +97,5 @@ add_test(NAME logical-operators COMMAND stella-interpreter typecheck ../tests/we
 add_test(NAME squares COMMAND stella-interpreter typecheck ../tests/well-typed/squares.stella)
 add_test(NAME pairs COMMAND stella-interpreter typecheck ../tests/well-typed/pairs.stella)
 add_test(NAME unit-type COMMAND stella-interpreter typecheck ../tests/well-typed/unit-type.stella)
-add_test(NAME inl-inr COMMAND stella-interpreter typecheck ../tests/well-typed/inl-inr.stella)
+add_test(NAME sum-inl-inr COMMAND stella-interpreter typecheck ../tests/well-typed/sum-inl-inr.stella)
+add_test(NAME sum-match COMMAND stella-interpreter typecheck ../tests/well-typed/sum-match.stella)

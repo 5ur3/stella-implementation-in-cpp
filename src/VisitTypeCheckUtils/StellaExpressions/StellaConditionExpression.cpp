@@ -26,6 +26,9 @@ bool StellaConditionExpression::isTypingCorrect() {
     std::cout << "Type error: unable to infer type of condition expression "
                  "(condition expression types are mismatched)"
               << std::endl;
+    std::cout << "\tNo supertype for " << expression1->getStellaType().toString()
+              << " and " << this->expression2->getStellaType().toString()
+              << std::endl;
     isCorrect = false;
   }
 

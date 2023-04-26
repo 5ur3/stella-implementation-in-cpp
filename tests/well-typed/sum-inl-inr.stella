@@ -1,0 +1,15 @@
+language core;
+
+extend with #sum-types, #unit-type;
+
+fn test(first : Bool) -> Nat + Bool {
+  return if first then inl(0) else inl(succ(0))
+}
+
+fn test2(first : Bool) -> Nat + Bool {
+  return if first then inr(false) else inr(true)
+}
+
+fn main(first : Bool) -> Nat + Bool {
+  return if first then test(first) else test2(first)
+}
