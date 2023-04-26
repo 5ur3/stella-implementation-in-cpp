@@ -383,8 +383,7 @@ void print_expression(StellaExpression *expression, int level) {
     break;
   }
   case STELLA_EXPRESSION_TYPE_PATTERN_VAR: {
-    StellaPatternVarExpression *expr =
-        (StellaPatternVarExpression *)expression;
+    StellaPatternVarExpression *expr = (StellaPatternVarExpression *)expression;
     std::cout << "PATTERN VAR " << expr->ident;
     std::cout << " : (" << expression->getStellaType().toString() << ")"
               << std::endl;
@@ -411,8 +410,6 @@ void onEnd() {
   print_function(stellaFunctions["test"]);
 }
 
-// Code below was not changed except for calling state-machine controlling
-// methods above, such as onFunction()
 namespace Stella {
 void VisitTypeCheck::visitProgram(Program *t) {}               // abstract class
 void VisitTypeCheck::visitLanguageDecl(LanguageDecl *t) {}     // abstract class
@@ -449,8 +446,6 @@ void VisitTypeCheck::visitAProgram(AProgram *a_program) {
     a_program->listextension_->accept(this);
   if (a_program->listdecl_)
     a_program->listdecl_->accept(this);
-
-  onEnd();
 }
 
 void VisitTypeCheck::visitLanguageCore(LanguageCore *language_core) {
@@ -465,7 +460,6 @@ void VisitTypeCheck::visitAnExtension(AnExtension *an_extension) {
 }
 
 void VisitTypeCheck::visitDeclFun(DeclFun *decl_fun) {
-  onFunction(decl_fun->stellaident_);
   /* Code For DeclFun Goes Here */
 
   if (decl_fun->listannotation_)
@@ -489,6 +483,76 @@ void VisitTypeCheck::visitDeclTypeAlias(DeclTypeAlias *decl_type_alias) {
   visitStellaIdent(decl_type_alias->stellaident_);
   if (decl_type_alias->type_)
     decl_type_alias->type_->accept(this);
+}
+
+void VisitTypeCheck::visitDeclExceptionType(
+    DeclExceptionType *decl_exception_type) {
+  /* Code For DeclExceptionType Goes Here */
+
+  if (decl_exception_type->type_)
+    decl_exception_type->type_->accept(this);
+}
+
+void VisitTypeCheck::visitDeclExceptionVariant(
+    DeclExceptionVariant *decl_exception_variant) {
+  /* Code For DeclExceptionVariant Goes Here */
+
+  visitStellaIdent(decl_exception_variant->stellaident_);
+  if (decl_exception_variant->type_)
+    decl_exception_variant->type_->accept(this);
+}
+
+void VisitTypeCheck::visitAssign(Assign *assign) {
+  /* Code For Assign Goes Here */
+
+  if (assign->expr_1)
+    assign->expr_1->accept(this);
+  if (assign->expr_2)
+    assign->expr_2->accept(this);
+}
+
+void VisitTypeCheck::visitRef(Ref *ref) {
+  /* Code For Ref Goes Here */
+
+  if (ref->expr_)
+    ref->expr_->accept(this);
+}
+
+void VisitTypeCheck::visitDeref(Deref *deref) {
+  /* Code For Deref Goes Here */
+
+  if (deref->expr_)
+    deref->expr_->accept(this);
+}
+
+void VisitTypeCheck::visitPanic(Panic *panic) { /* Code For Panic Goes Here */
+}
+
+void VisitTypeCheck::visitThrow(Throw *throw_) {
+  /* Code For Throw Goes Here */
+
+  if (throw_->expr_)
+    throw_->expr_->accept(this);
+}
+
+void VisitTypeCheck::visitTryCatch(TryCatch *try_catch) {
+  /* Code For TryCatch Goes Here */
+
+  if (try_catch->expr_1)
+    try_catch->expr_1->accept(this);
+  if (try_catch->pattern_)
+    try_catch->pattern_->accept(this);
+  if (try_catch->expr_2)
+    try_catch->expr_2->accept(this);
+}
+
+void VisitTypeCheck::visitTryWith(TryWith *try_with) {
+  /* Code For TryWith Goes Here */
+
+  if (try_with->expr_1)
+    try_with->expr_1->accept(this);
+  if (try_with->expr_2)
+    try_with->expr_2->accept(this);
 }
 
 void VisitTypeCheck::visitALocalDecl(ALocalDecl *a_local_decl) {
@@ -534,7 +598,7 @@ void VisitTypeCheck::visitSomeThrowType(SomeThrowType *some_throw_type) {
 }
 
 void VisitTypeCheck::visitTypeFun(TypeFun *type_fun) {
-  onType(STELLA_DATA_TYPE_FUN);
+  /* Code For TypeFun Goes Here */
 
   if (type_fun->listtype_)
     type_fun->listtype_->accept(this);
@@ -551,7 +615,7 @@ void VisitTypeCheck::visitTypeRec(TypeRec *type_rec) {
 }
 
 void VisitTypeCheck::visitTypeSum(TypeSum *type_sum) {
-  onType(STELLA_DATA_TYPE_SUM);
+  /* Code For TypeSum Goes Here */
 
   if (type_sum->type_1)
     type_sum->type_1->accept(this);
@@ -560,7 +624,7 @@ void VisitTypeCheck::visitTypeSum(TypeSum *type_sum) {
 }
 
 void VisitTypeCheck::visitTypeTuple(TypeTuple *type_tuple) {
-  onType(STELLA_DATA_TYPE_TUPLE);
+  /* Code For TypeTuple Goes Here */
 
   if (type_tuple->listtype_)
     type_tuple->listtype_->accept(this);
@@ -588,18 +652,30 @@ void VisitTypeCheck::visitTypeList(TypeList *type_list) {
 }
 
 void VisitTypeCheck::visitTypeBool(TypeBool *type_bool) {
-  onType(STELLA_DATA_TYPE_BOOL);
   /* Code For TypeBool Goes Here */
 }
 
 void VisitTypeCheck::visitTypeNat(TypeNat *type_nat) {
-  onType(STELLA_DATA_TYPE_NAT);
   /* Code For TypeNat Goes Here */
 }
 
 void VisitTypeCheck::visitTypeUnit(TypeUnit *type_unit) {
-  onType(STELLA_DATA_TYPE_UNIT);
   /* Code For TypeUnit Goes Here */
+}
+
+void VisitTypeCheck::visitTypeTop(TypeTop *type_top) {
+  /* Code For TypeTop Goes Here */
+}
+
+void VisitTypeCheck::visitTypeBottom(TypeBottom *type_bottom) {
+  /* Code For TypeBottom Goes Here */
+}
+
+void VisitTypeCheck::visitTypeRef(TypeRef *type_ref) {
+  /* Code For TypeRef Goes Here */
+
+  if (type_ref->type_)
+    type_ref->type_->accept(this);
 }
 
 void VisitTypeCheck::visitTypeVar(TypeVar *type_var) {
@@ -609,7 +685,7 @@ void VisitTypeCheck::visitTypeVar(TypeVar *type_var) {
 }
 
 void VisitTypeCheck::visitAMatchCase(AMatchCase *a_match_case) {
-  onMatchCase();
+  /* Code For AMatchCase Goes Here */
 
   if (a_match_case->pattern_)
     a_match_case->pattern_->accept(this);
@@ -659,14 +735,14 @@ void VisitTypeCheck::visitPatternVariant(PatternVariant *pattern_variant) {
 }
 
 void VisitTypeCheck::visitPatternInl(PatternInl *pattern_inl) {
-  onPatternInl();
+  /* Code For PatternInl Goes Here */
 
   if (pattern_inl->pattern_)
     pattern_inl->pattern_->accept(this);
 }
 
 void VisitTypeCheck::visitPatternInr(PatternInr *pattern_inr) {
-  onPatternInr();
+  /* Code For PatternInr Goes Here */
 
   if (pattern_inr->pattern_)
     pattern_inr->pattern_->accept(this);
@@ -728,7 +804,7 @@ void VisitTypeCheck::visitPatternSucc(PatternSucc *pattern_succ) {
 }
 
 void VisitTypeCheck::visitPatternVar(PatternVar *pattern_var) {
-  onPatternVar(pattern_var->stellaident_);
+  /* Code For PatternVar Goes Here */
 
   visitStellaIdent(pattern_var->stellaident_);
 }
@@ -760,7 +836,7 @@ void VisitTypeCheck::visitSequence(Sequence *sequence) {
 }
 
 void VisitTypeCheck::visitIf(If *if_) {
-  onCondition();
+  /* Code For If Goes Here */
 
   if (if_->expr_1)
     if_->expr_1->accept(this);
@@ -852,8 +928,17 @@ void VisitTypeCheck::visitTypeAsc(TypeAsc *type_asc) {
     type_asc->type_->accept(this);
 }
 
+void VisitTypeCheck::visitTypeCast(TypeCast *type_cast) {
+  /* Code For TypeCast Goes Here */
+
+  if (type_cast->expr_)
+    type_cast->expr_->accept(this);
+  if (type_cast->type_)
+    type_cast->type_->accept(this);
+}
+
 void VisitTypeCheck::visitAbstraction(Abstraction *abstraction) {
-  onAbstraction();
+  /* Code For Abstraction Goes Here */
 
   if (abstraction->listparamdecl_)
     abstraction->listparamdecl_->accept(this);
@@ -870,7 +955,7 @@ void VisitTypeCheck::visitVariant(Variant *variant) {
 }
 
 void VisitTypeCheck::visitMatch(Match *match) {
-  onMatch(match->listmatchcase_->size());
+  /* Code For Match Goes Here */
 
   if (match->expr_)
     match->expr_->accept(this);
@@ -940,7 +1025,7 @@ void VisitTypeCheck::visitLogicAnd(LogicAnd *logic_and) {
 }
 
 void VisitTypeCheck::visitApplication(Application *application) {
-  onApplication();
+  /* Code For Application Goes Here */
 
   if (application->expr_)
     application->expr_->accept(this);
@@ -957,7 +1042,7 @@ void VisitTypeCheck::visitDotRecord(DotRecord *dot_record) {
 }
 
 void VisitTypeCheck::visitDotTuple(DotTuple *dot_tuple) {
-  onDotTuple(dot_tuple->integer_);
+  /* Code For DotTuple Goes Here */
 
   if (dot_tuple->expr_)
     dot_tuple->expr_->accept(this);
@@ -965,7 +1050,7 @@ void VisitTypeCheck::visitDotTuple(DotTuple *dot_tuple) {
 }
 
 void VisitTypeCheck::visitTuple(Tuple *tuple) {
-  onTuple();
+  /* Code For Tuple Goes Here */
 
   if (tuple->listexpr_)
     tuple->listexpr_->accept(this);
@@ -1009,21 +1094,21 @@ void VisitTypeCheck::visitTail(Tail *tail) {
 }
 
 void VisitTypeCheck::visitInl(Inl *inl) {
-  onInl();
+  /* Code For Inl Goes Here */
 
   if (inl->expr_)
     inl->expr_->accept(this);
 }
 
 void VisitTypeCheck::visitInr(Inr *inr) {
-  onInr();
+  /* Code For Inr Goes Here */
 
   if (inr->expr_)
     inr->expr_->accept(this);
 }
 
 void VisitTypeCheck::visitSucc(Succ *succ) {
-  onSucc();
+  /* Code For Succ Goes Here */
 
   if (succ->expr_)
     succ->expr_->accept(this);
@@ -1058,7 +1143,7 @@ void VisitTypeCheck::visitFix(Fix *fix) {
 }
 
 void VisitTypeCheck::visitNatRec(NatRec *nat_rec) {
-  onNatRec();
+  /* Code For NatRec Goes Here */
 
   if (nat_rec->expr_1)
     nat_rec->expr_1->accept(this);
@@ -1086,23 +1171,32 @@ void VisitTypeCheck::visitUnfold(Unfold *unfold) {
     unfold->expr_->accept(this);
 }
 
-void VisitTypeCheck::visitConstTrue(ConstTrue *const_true) { onConstBool(); }
+void VisitTypeCheck::visitConstTrue(ConstTrue *const_true) {
+  /* Code For ConstTrue Goes Here */
+}
 
-void VisitTypeCheck::visitConstFalse(ConstFalse *const_false) { onConstBool(); }
+void VisitTypeCheck::visitConstFalse(ConstFalse *const_false) {
+  /* Code For ConstFalse Goes Here */
+}
 
 void VisitTypeCheck::visitConstUnit(ConstUnit *const_unit) {
-  onConstUnit();
   /* Code For ConstUnit Goes Here */
 }
 
 void VisitTypeCheck::visitConstInt(ConstInt *const_int) {
-  onConstInt();
+  /* Code For ConstInt Goes Here */
 
   visitInteger(const_int->integer_);
 }
 
+void VisitTypeCheck::visitConstMemory(ConstMemory *const_memory) {
+  /* Code For ConstMemory Goes Here */
+
+  visitMemoryAddress(const_memory->memoryaddress_);
+}
+
 void VisitTypeCheck::visitVar(Var *var) {
-  onVar(var->stellaident_);
+  /* Code For Var Goes Here */
 
   visitStellaIdent(var->stellaident_);
 }
@@ -1274,12 +1368,15 @@ void VisitTypeCheck::visitIdent(Ident x) { /* Code for Ident Goes Here */
 }
 
 void VisitTypeCheck::visitStellaIdent(StellaIdent x) {
-  onIdent(x);
   /* Code for StellaIdent Goes Here */
 }
 
 void VisitTypeCheck::visitExtensionName(ExtensionName x) {
   /* Code for ExtensionName Goes Here */
+}
+
+void VisitTypeCheck::visitMemoryAddress(MemoryAddress x) {
+  /* Code for MemoryAddress Goes Here */
 }
 
 } // namespace Stella
