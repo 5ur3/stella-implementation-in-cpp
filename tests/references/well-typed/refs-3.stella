@@ -1,0 +1,20 @@
+language core;
+
+extend with
+  #references,
+  #sequencing,
+  #let-bindings,
+  #arithmetic-operators,
+  #natural-literals;
+
+// in this test I did some changes because of
+// incompetness of my code
+// Let & Add are not implemented in my code, so I changed some lines
+
+fn main(x : &Nat) -> Nat {
+  return
+    // let x = new(0) in -
+    x := *x;
+    x := *x;
+    *x
+}

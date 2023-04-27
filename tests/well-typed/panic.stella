@@ -1,0 +1,13 @@
+language core;
+
+extend with #comparison-operators, #panic;
+
+fn div(n : Nat) -> fn(Bool) -> Nat {
+  return fn(isZero : Bool) {
+    return if panic! then n else panic!
+  };
+}
+
+fn main(n : Nat) -> Nat {
+  return div(n)(true);
+}

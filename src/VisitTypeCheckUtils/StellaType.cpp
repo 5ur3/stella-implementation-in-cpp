@@ -4,161 +4,211 @@
 #include <string>
 #include <vector>
 
-// Forward-declaration of one of state machine controlling methods from
-// VisitTypeCheck.cpp
-void onTypeParsingEnd();
-
-// Documentation of the class methods is in StellaType.h
-bool StellaType::isCompletedRecursive(
-    std::deque<StellaDataType> &remainingTokens) {
-  if (remainingTokens.empty()) {
+bool StellaType::isCompleted() {
+  if (this->childrenCount != this->children.size()) {
     return false;
   }
-
-  StellaDataType token = remainingTokens.front();
-  remainingTokens.pop_front();
-
-  switch (token) {
-  case STELLA_DATA_TYPE_UNIT:
-    return true;
-  case STELLA_DATA_TYPE_BOOL:
-    return true;
-  case STELLA_DATA_TYPE_NAT:
-    return true;
-  case STELLA_DATA_TYPE_ANY:
-    return true;
-  case STELLA_DATA_TYPE_FUN:
-    return isCompletedRecursive(remainingTokens) &&
-           isCompletedRecursive(remainingTokens);
-  case STELLA_DATA_TYPE_TUPLE:
-    return isCompletedRecursive(remainingTokens) &&
-           isCompletedRecursive(remainingTokens);
-  case STELLA_DATA_TYPE_SUM:
-    return isCompletedRecursive(remainingTokens) &&
-           isCompletedRecursive(remainingTokens);
+  for (int i = 0; i < childrenCount; i++) {
+    if (!this->children[i].isCompleted()) {
+      return false;
+    }
   }
+  return true;
 }
 
-bool StellaType::isCompleted() {
-  std::deque<StellaDataType> tokens;
-  tokens.insert(tokens.begin(), this->typeVector.begin(),
-                this->typeVector.end());
-  return isCompletedRecursive(tokens);
-}
+StellaType::StellaType(StellaDataType baseType) {
+  this->type = baseType;
 
-StellaType::StellaType(){};
-StellaType::StellaType(StellaDataType token) {
-  this->typeVector.push_back(token);
+  switch (baseType) {
+  case STELLA_DATA_TYPE_ANY:
+    break;
+  case STELLA_DATA_TYPE_BOOL:
+    break;
+  case STELLA_DATA_TYPE_NAT:
+    break;
+  case STELLA_DATA_TYPE_UNIT:
+    break;
+  case STELLA_DATA_TYPE_RECORD:
+    break;
+  case STELLA_DATA_TYPE_INVALID:
+    break;
+  case STELLA_DATA_TYPE_FUN:
+    this->childrenCount = 2;
+    break;
+  case STELLA_DATA_TYPE_REF:
+    this->childrenCount = 1;
+    break;
+  case STELLA_DATA_TYPE_SUM:
+    this->childrenCount = 2;
+    break;
+  case STELLA_DATA_TYPE_TUPLE:
+    this->childrenCount = 2;
+    break;
+  }
 };
-StellaType::StellaType(StellaType baseType, StellaType arg1, StellaType arg2) {
-  this->typeVector.insert(this->typeVector.end(), baseType.typeVector.begin(),
-                          baseType.typeVector.end());
-  this->typeVector.insert(this->typeVector.end(), arg1.typeVector.begin(),
-                          arg1.typeVector.end());
-  this->typeVector.insert(this->typeVector.end(), arg2.typeVector.begin(),
-                          arg2.typeVector.end());
+StellaType::StellaType() : StellaType(STELLA_DATA_TYPE_INVALID){};
+StellaType::StellaType(StellaDataType baseType, StellaType arg)
+    : StellaType(baseType) {
+  this->children.push_back(arg);
+};
+StellaType::StellaType(StellaDataType baseType, StellaType arg1,
+                       StellaType arg2)
+    : StellaType(baseType) {
+  this->children.push_back(arg1);
+  this->children.push_back(arg2);
+};
+StellaType::StellaType(StellaDataType baseType, int childrenCount) {
+  this->type = baseType;
+  this->childrenCount = childrenCount;
 };
 
 void StellaType::parse(StellaDataType typeToken) {
-  this->typeVector.push_back(typeToken);
-
-  if (isCompleted()) {
-    onTypeParsingEnd();
+  for (int i = 0; i < this->children.size(); i++) {
+    if (!this->children[i].isCompleted()) {
+      this->children[i].parse(typeToken);
+      return;
+    }
   }
+  this->children.push_back(StellaType(typeToken));
+}
+
+void StellaType::proxyType(StellaType type) {
+  for (int i = 0; i < this->children.size(); i++) {
+    if (!this->children[i].isCompleted()) {
+      this->children[i].proxyType(type);
+      return;
+    }
+  }
+  this->children.push_back(type);
+}
+
+void StellaType::parseIdent(std::string ident) {
+  if (this->type == STELLA_DATA_TYPE_RECORD &&
+      (this->children.size() == 0 ||
+       this->children[this->children.size() - 1].isCompleted())) {
+    this->names.push_back(ident);
+    return;
+  }
+
+  this->children[this->children.size() - 1].parseIdent(ident);
+}
+
+bool StellaType::isRecord() {
+  return this->type == STELLA_DATA_TYPE_RECORD ||
+         this->type == STELLA_DATA_TYPE_ANY;
 }
 
 bool StellaType::isFunction() {
-  return this->isCompleted() && this->typeVector[0] == STELLA_DATA_TYPE_FUN;
+  return this->type == STELLA_DATA_TYPE_FUN ||
+         this->type == STELLA_DATA_TYPE_ANY;
 }
 
 bool StellaType::isTuple() {
-  return this->isCompleted() && this->typeVector[0] == STELLA_DATA_TYPE_TUPLE;
+  return this->type == STELLA_DATA_TYPE_TUPLE ||
+         this->type == STELLA_DATA_TYPE_ANY;
 }
 
 bool StellaType::isSumType() {
-  return this->isCompleted() && this->typeVector[0] == STELLA_DATA_TYPE_SUM;
+  return this->type == STELLA_DATA_TYPE_SUM ||
+         this->type == STELLA_DATA_TYPE_ANY;
 }
 
-bool StellaType::isComposite() {
-  return this->isFunction() || this->isTuple() || this->isSumType();
+bool StellaType::isRefType() {
+  return this->type == STELLA_DATA_TYPE_REF ||
+         this->type == STELLA_DATA_TYPE_ANY;
 }
 
 StellaType StellaType::getSubType(int index) {
-  int counter = 1;
-  StellaType type;
-  for (int i = 0; i < index; i++) {
-    type = StellaType();
-    for (; !type.isCompleted(); counter++) {
-      type.parse(this->typeVector[counter]);
-    }
+  if (this->type == STELLA_DATA_TYPE_ANY) {
+    return StellaType(STELLA_DATA_TYPE_ANY);
   }
-  return type;
+
+  if (index - 1 >= this->children.size() || !this->isCompleted()) {
+    return StellaType(STELLA_DATA_TYPE_INVALID);
+  }
+
+  return this->children[index - 1];
 }
 
-StellaType StellaType::getParamType() {
-  if (this->isFunction()) {
-    return this->getSubType(1);
-  }
-  return StellaType();
-}
+StellaType StellaType::getParamType() { return this->getSubType(1); }
 
-StellaType StellaType::getReturnType() {
-  if (this->isFunction()) {
-    return this->getSubType(2);
-  }
-  return StellaType();
-}
+StellaType StellaType::getReturnType() { return this->getSubType(2); }
 
-StellaType StellaType::getTupleType(int index) {
-  if (this->isTuple()) {
-    return this->getSubType(index);
-  }
-  return StellaType();
-}
+StellaType StellaType::getDerefType() { return this->getSubType(1); }
 
-StellaType StellaType::getSumType(int index) {
-  if (this->isSumType()) {
-    return this->getSubType(index);
-  }
-  return StellaType();
-}
-
-bool StellaType::isEqual(StellaType stellaType) {
+bool StellaType::castsTo(StellaType stellaType) {
   if (!this->isCompleted() || !stellaType.isCompleted()) {
     return false;
   }
 
-  if (this->typeVector[0] == STELLA_DATA_TYPE_ANY ||
-      stellaType.typeVector[0] == STELLA_DATA_TYPE_ANY) {
-    return true;
-  }
-
-  if (this->isComposite() != stellaType.isComposite()) {
+  if (this->type == STELLA_DATA_TYPE_INVALID ||
+      stellaType.type == STELLA_DATA_TYPE_INVALID) {
     return false;
   }
 
-  if (!this->isComposite() && this->typeVector[0] == stellaType.typeVector[0]) {
+  if (this->type == STELLA_DATA_TYPE_ANY) {
     return true;
   }
 
-  if (this->typeVector[0] == stellaType.typeVector[0]) {
-    return this->getSubType(1).isEqual(stellaType.getSubType(1)) &&
-           this->getSubType(2).isEqual(stellaType.getSubType(2));
+  if (this->type == STELLA_DATA_TYPE_FUN &&
+      stellaType.type == STELLA_DATA_TYPE_FUN) {
+    if (this->childrenCount != stellaType.childrenCount) {
+      return false;
+    }
+
+    for (int i = 1; i <= this->childrenCount; i++) {
+      if (!stellaType.getSubType(i).castsTo(this->getSubType(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  if (this->type == STELLA_DATA_TYPE_RECORD &&
+      stellaType.type == STELLA_DATA_TYPE_RECORD) {
+    for (int i = 0; i < stellaType.names.size(); i++) {
+      for (int j = 0; j < this->names.size(); j++) {
+        if (stellaType.names[i] == this->names[j]) {
+          if (!this->children[j].castsTo(stellaType.children[i])) {
+            return false;
+          }
+          break;
+        }
+
+        if (j == this->names.size() - 1) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  if (this->childrenCount != stellaType.childrenCount) {
+    return false;
+  }
+
+  if (this->type == stellaType.type) {
+    for (int i = 1; i <= this->childrenCount; i++) {
+      if (!this->getSubType(i).castsTo(stellaType.getSubType(i))) {
+        return false;
+      }
+    }
+    return true;
   }
 
   return false;
 }
 
-std::string StellaType::toString() {
-  if (!this->isCompleted()) {
-    return "";
-  }
+bool StellaType::biCasts(StellaType stellaType) {
+  return this->castsTo(stellaType) || stellaType.castsTo(*this);
+}
 
+std::string StellaType::toString() {
   std::string typeString;
-  switch (this->typeVector[0]) {
+  switch (this->type) {
   case STELLA_DATA_TYPE_ANY:
-    typeString = "any";
-    break;
+    return "any";
   case STELLA_DATA_TYPE_FUN:
     typeString = "fun";
     break;
@@ -177,33 +227,53 @@ std::string StellaType::toString() {
   case STELLA_DATA_TYPE_UNIT:
     typeString = "unit";
     break;
+  case STELLA_DATA_TYPE_REF:
+    typeString = "ref";
+    break;
+  case STELLA_DATA_TYPE_RECORD:
+    typeString = "record";
+    break;
+  case STELLA_DATA_TYPE_INVALID:
+    typeString = "INVALID";
+    break;
   }
 
-  if (!this->isComposite()) {
-    return typeString;
+  if (this->children.size() > 0) {
+    typeString += "(";
+
+    for (int i = 0; i < this->children.size(); i++) {
+      if (this->type == STELLA_DATA_TYPE_RECORD) {
+        typeString += this->names[i] + ": ";
+      }
+      typeString += this->children[i].toString() + ", ";
+    }
+
+    typeString += ")";
   }
 
-  return typeString + "(" + this->getSubType(1).toString() + ", " +
-         this->getSubType(2).toString() + ")";
+  return typeString;
 }
 
 StellaType mergeTypes(StellaType type1, StellaType type2) {
-  if (!type1.isEqual(type2)) {
-    return StellaType();
+  if (!type1.biCasts(type2)) {
+    return StellaType(STELLA_DATA_TYPE_INVALID);
   }
 
-  if (type1.typeVector[0] == STELLA_DATA_TYPE_ANY) {
+  if (type1.type == STELLA_DATA_TYPE_ANY) {
     return type2;
   }
-  if (type2.typeVector[0] == STELLA_DATA_TYPE_ANY) {
+  if (type2.type == STELLA_DATA_TYPE_ANY) {
     return type1;
   }
 
-  if (!type1.isComposite()) {
+  if (type1.childrenCount == 0) {
     return type1;
   }
 
-  return StellaType(StellaType(type1.typeVector[0]),
-                    mergeTypes(type1.getSubType(1), type2.getSubType(1)),
-                    mergeTypes(type1.getSubType(2), type2.getSubType(2)));
+  StellaType res = StellaType(type1.type);
+  for (int i = 0; i < type1.childrenCount; i++) {
+    res.children.push_back(
+        mergeTypes(type1.getSubType(i + 1), type2.getSubType(i + 1)));
+  }
+  return res;
 }

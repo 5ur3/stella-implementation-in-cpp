@@ -5,7 +5,7 @@ StellaAbstractionExpression::StellaAbstractionExpression() {
   this->type = STELLA_EXPRESSION_TYPE_ABSTRACTION;
 }
 StellaType StellaAbstractionExpression::getStellaType() {
-  return StellaType(StellaType(STELLA_DATA_TYPE_FUN), this->paramType,
+  return StellaType(STELLA_DATA_TYPE_FUN, this->stellaType.children[0],
                     this->expression->getStellaType());
 }
 bool StellaAbstractionExpression::isTypingCorrect() {
@@ -19,10 +19,19 @@ bool StellaAbstractionExpression::isTypingCorrect() {
 }
 void StellaAbstractionExpression::proxyExpressionTypeToken(
     StellaDataType typeToken) {
-  if (this->paramType.isCompleted()) {
-    this->expression->proxyExpressionTypeToken(typeToken);
+  if (this->stellaType.children.size() == 0 ||
+      !this->stellaType.children[0].isCompleted()) {
+    this->stellaType.parse(typeToken);
   } else {
-    this->paramType.parse(typeToken);
+    this->expression->proxyExpressionTypeToken(typeToken);
+  }
+}
+void StellaAbstractionExpression::proxyType(StellaType type) {
+  if (this->stellaType.children.size() == 0 ||
+      !this->stellaType.children[0].isCompleted()) {
+    this->stellaType.proxyType(type);
+  } else {
+    this->expression->proxyType(type);
   }
 }
 void StellaAbstractionExpression::proxyExpression(
@@ -30,19 +39,24 @@ void StellaAbstractionExpression::proxyExpression(
   if (this->expression == NULL) {
     this->expression = expression;
     this->expression->setContext(this->context);
-    this->expression->addContext(this->paramIdent, this->paramType);
+    this->expression->addContext(this->paramIdent,
+                                 this->stellaType.children[0]);
   } else {
     this->expression->proxyExpression(expression);
   }
 }
 void StellaAbstractionExpression::proxyIdent(Stella::StellaIdent ident) {
+  std::cout << "HERE" << std::endl;
   if (this->paramIdent == "") {
     this->paramIdent = ident;
+  } else if (!this->stellaType.children[0].isCompleted()) {
+    this->stellaType.parseIdent(ident);
   } else {
     this->expression->proxyIdent(ident);
   }
 }
 bool StellaAbstractionExpression::isParsed() {
-  return this->paramIdent != "" && this->paramType.isCompleted() &&
+  return this->paramIdent != "" && this->stellaType.children.size() > 0 &&
+         this->stellaType.children[0].isCompleted() &&
          this->expression != NULL && this->expression->isParsed();
 }

@@ -37,6 +37,9 @@ void StellaInlInrExpression::proxyExpressionTypeToken(
     StellaDataType typeToken) {
   this->expression->proxyExpressionTypeToken(typeToken);
 }
+void StellaInlInrExpression::proxyType(StellaType type) {
+  this->expression->proxyType(type);
+}
 void StellaInlInrExpression::proxyExpression(StellaExpression *expression) {
   if (this->expression == NULL) {
     this->expression = expression;

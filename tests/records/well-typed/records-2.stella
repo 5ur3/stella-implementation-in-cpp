@@ -1,0 +1,10 @@
+language core;
+extend with #records;
+
+fn nested(p : {z : {x : Nat, y : Bool}, kek : Bool}) -> {a : Nat, b : Bool} {
+  return {a = p.z.x, b = p.z.y}
+}
+
+fn main(x : Nat) -> {a : Nat, b : Bool} {
+  return nested({z = {x = x, y = false}, kek = true})
+}

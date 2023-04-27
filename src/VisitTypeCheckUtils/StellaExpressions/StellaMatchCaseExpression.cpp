@@ -44,6 +44,13 @@ void StellaMatchCaseExpression::proxyExpressionTypeToken(
   }
   this->expression->proxyExpressionTypeToken(typeToken);
 }
+void StellaMatchCaseExpression::proxyType(
+    StellaType type) {
+  if (!this->match->isParsed()) {
+    return this->match->proxyType(type);
+  }
+  this->expression->proxyType(type);
+}
 
 std::pair<std::string, StellaType> getPatternVar(StellaExpression *pattern) {
   switch (pattern->type) {
@@ -57,7 +64,7 @@ std::pair<std::string, StellaType> getPatternVar(StellaExpression *pattern) {
     return getPatternVar(expr->expression);
   }
   default: {
-    return {"", StellaType()};
+    return {"", StellaType(STELLA_DATA_TYPE_INVALID)};
   }
   }
 }

@@ -7,7 +7,7 @@ StellaDotTupleExpression::StellaDotTupleExpression(int index) {
 }
 
 StellaType StellaDotTupleExpression::getStellaType() {
-  return expression->getStellaType().getTupleType(this->index);
+  return expression->getStellaType().getSubType(this->index);
 }
 
 bool StellaDotTupleExpression::isTypingCorrect() {
@@ -41,6 +41,9 @@ void StellaDotTupleExpression::proxyIdent(Stella::StellaIdent ident) {
 void StellaDotTupleExpression::proxyExpressionTypeToken(
     StellaDataType typeToken) {
   return this->expression->proxyExpressionTypeToken(typeToken);
+}
+void StellaDotTupleExpression::proxyType(StellaType type) {
+  this->expression->proxyType(type);
 }
 
 void StellaDotTupleExpression::proxyExpression(StellaExpression *expression) {

@@ -33,7 +33,7 @@ bool StellaMatchExpression::isTypingCorrect() {
   if (areInnerExpressionsCorrect) {
     StellaType innerExpressionsType = expressions[0]->getStellaType();
     for (int i = 1; i < this->expressions.size(); i++) {
-      if (!innerExpressionsType.isEqual(
+      if (!innerExpressionsType.biCasts(
               this->expressions[i]->getStellaType())) {
         std::cout << "Type error: unable to infer type of match expression "
                      "(match case expression types are mismatched)"
@@ -76,6 +76,16 @@ void StellaMatchExpression::proxyExpressionTypeToken(StellaDataType typeToken) {
   for (int i = 0; i < this->expressions.size(); i++) {
     if (!this->expressions[i]->isParsed()) {
       return this->expressions[i]->proxyExpressionTypeToken(typeToken);
+    }
+  }
+}
+void StellaMatchExpression::proxyType(StellaType type) {
+  if (!this->matchExpression->isParsed()) {
+    return this->matchExpression->proxyType(type);
+  }
+  for (int i = 0; i < this->expressions.size(); i++) {
+    if (!this->expressions[i]->isParsed()) {
+      return this->expressions[i]->proxyType(type);
     }
   }
 }

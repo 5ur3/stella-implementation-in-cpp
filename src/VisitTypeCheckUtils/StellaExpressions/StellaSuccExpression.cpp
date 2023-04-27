@@ -15,7 +15,7 @@ bool StellaSuccExpression::isTypingCorrect() {
   bool isCorrect = true;
   if (!this->expression->isTypingCorrect()) {
     isCorrect = false;
-  } else if (!this->expression->getStellaType().isEqual(
+  } else if (!this->expression->getStellaType().castsTo(
                  StellaType(STELLA_DATA_TYPE_NAT))) {
     std::cout << "Type error: succ expression type is not Nat" << std::endl;
     isCorrect = false;
@@ -29,6 +29,9 @@ bool StellaSuccExpression::isTypingCorrect() {
 }
 void StellaSuccExpression::proxyExpressionTypeToken(StellaDataType typeToken) {
   this->expression->proxyExpressionTypeToken(typeToken);
+}
+void StellaSuccExpression::proxyType(StellaType type) {
+  this->expression->proxyType(type);
 }
 void StellaSuccExpression::proxyExpression(StellaExpression *expression) {
   if (this->expression == NULL) {

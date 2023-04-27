@@ -9,17 +9,8 @@
 #include <utility>
 #include <vector>
 
-// My implementation of type checking program consists of 2 main parts.
-//
-// The first part is the state machine (this file)
-// It is used to keep track of what kind of token is expected to come next
-// For example, when Visitor encounters Ident, the state is either
-//    "STATE_AWAITING_FUNCTION_IDENT",
-//    "STATE_AWAITING_FUNCTION_PARAM_IDENT" or
-//    "STATE_AWAITING_ABSTRACTION_PARAM_IDENT"
-//
-// The second part of my type checking implementation is the construction of
-// typing trees. For example, when Visitor encounters a Function Declaration, it
+// To typecheck, I construct typing trees.
+// For example, when Visitor encounters a Function Declaration, it
 // starts to construct a new typing tree with the StellaFunction at the root.
 // When the tree is built, it is enough to call StellaFunction.isTypingCorrect()
 // to check typing correctness of the function (and everything inside)
@@ -33,22 +24,6 @@
 // (./VisitTypeCheckUtils/StellaExpressions/*)
 //
 // My implementation also prints informative type errors
-
-enum State {
-  STATE_AWAITING_FUNCTION_IDENT = 0,
-  STATE_PARSING_FUNCTION_RETURN_TYPE = 1,
-  STATE_AWAITING_FUNCTION_PARAM_IDENT = 2,
-  STATE_PARSING_FUNCTION_PARAM_TYPE = 3,
-  STATE_AWAIGING_FUNCTION_EXPRESSION = 4,
-
-  STATE_AWAITING_ABSTRACTION_PARAM_IDENT = 5,
-  STATE_PARSING_ABSTRACTION_PARAM_TYPE = 6,
-  STATE_AWAITING_EXPRESSION = 7,
-
-  STATE_IDLE = 100
-};
-
-State state = STATE_IDLE;
 
 // Global context contains function type signatures
 std::map<Stella::StellaIdent, StellaType> globalContext;
@@ -68,92 +43,35 @@ void verifyFunction(StellaFunction *function) {
 // Functions below are called directly from the template visitor
 // These functions control the program state and build typing trees
 void onFunction(Stella::StellaIdent ident) {
+  // std::cout << "FUN " << ident << std::endl;
   if (currentFunction != NULL) {
     verifyFunction(currentFunction);
-    globalContext.insert(
-        {currentFunction->ident,
-         StellaType(StellaType(STELLA_DATA_TYPE_FUN),
-                    currentFunction->paramType, currentFunction->returnType)});
+    globalContext.insert({currentFunction->ident, currentFunction->type});
   }
 
-  auto function = new StellaFunction(ident, globalContext);
+  StellaFunction *function = new StellaFunction(globalContext);
   stellaFunctions.insert({ident, function});
-  state = STATE_AWAITING_FUNCTION_IDENT;
   currentFunction = function;
 }
 
 void onIdent(Stella::StellaIdent ident) {
-  switch (state) {
-  case STATE_AWAITING_FUNCTION_IDENT: {
-    state = STATE_AWAITING_FUNCTION_PARAM_IDENT;
-    break;
-  }
-  case STATE_AWAITING_FUNCTION_PARAM_IDENT: {
-    currentFunction->setParamIdent(ident);
-    state = STATE_PARSING_FUNCTION_PARAM_TYPE;
-    break;
-  }
-  case STATE_AWAITING_ABSTRACTION_PARAM_IDENT: {
-    currentFunction->proxyIdent(ident);
-    state = STATE_PARSING_ABSTRACTION_PARAM_TYPE;
-    break;
-  }
-  default:
-    break;
-  }
+  // std::cout << "IDENT " << ident << std::endl;
+  currentFunction->proxyIdent(ident);
+  // std::cout << "IDENT END" << std::endl;
 }
 
 void onType(StellaDataType type) {
-  switch (state) {
-  case STATE_PARSING_FUNCTION_PARAM_TYPE: {
-    currentFunction->assembleParamType(type);
-    break;
-  }
-  case STATE_PARSING_FUNCTION_RETURN_TYPE: {
-    currentFunction->assembleReturnType(type);
-    break;
-  }
-  case STATE_PARSING_ABSTRACTION_PARAM_TYPE: {
-    currentFunction->proxyExpressionTypeToken(type);
-    break;
-  }
-  default:
-    break;
-  };
+  // std::cout << "TYPE " << type << std::endl;
+  currentFunction->proxyExpressionTypeToken(type);
+  // std::cout << "TYPE END" << std::endl;
 }
 
-void onTypeParsingEnd() {
-  switch (state) {
-  case STATE_PARSING_FUNCTION_PARAM_TYPE: {
-    state = STATE_PARSING_FUNCTION_RETURN_TYPE;
-    break;
-  }
-  case STATE_PARSING_FUNCTION_RETURN_TYPE: {
-    state = STATE_AWAIGING_FUNCTION_EXPRESSION;
-    break;
-  }
-  case STATE_PARSING_ABSTRACTION_PARAM_TYPE: {
-    state = STATE_AWAITING_EXPRESSION;
-    break;
-  }
-  default:
-    break;
-  }
-}
+void onExactType(StellaType type) { currentFunction->proxyType(type); }
 
 void onExpression(StellaExpression *expression) {
-  switch (state) {
-  case STATE_AWAIGING_FUNCTION_EXPRESSION: {
-    currentFunction->setExpression(expression);
-    break;
-  }
-  case STATE_AWAITING_EXPRESSION: {
-    currentFunction->proxyExpression(expression);
-    break;
-  }
-  default:
-    break;
-  }
+  // std::cout << "EXPR " << expression->type << std::endl;
+  currentFunction->proxyExpression(expression);
+  // std::cout << "EXPR END" << std::endl;
 }
 
 void onConstInt() { onExpression(new StellaConstIntExpression()); }
@@ -166,74 +84,52 @@ void onVar(Stella::StellaIdent ident) {
   onExpression(new StellaVarExpression(ident));
 }
 
-void onSucc() {
-  onExpression(new StellaSuccExpression());
-  state = STATE_AWAITING_EXPRESSION;
-}
+void onSucc() { onExpression(new StellaSuccExpression()); }
 
-void onNatRec() {
-  onExpression(new StellaNatRecExpression());
-  state = STATE_AWAITING_EXPRESSION;
-}
+void onNatRec() { onExpression(new StellaNatRecExpression()); }
 
-void onAbstraction() {
-  onExpression(new StellaAbstractionExpression());
-  state = STATE_AWAITING_ABSTRACTION_PARAM_IDENT;
-}
+void onAbstraction() { onExpression(new StellaAbstractionExpression()); }
 
-void onApplication() {
-  onExpression(new StellaApplicationExpression());
-  state = STATE_AWAITING_EXPRESSION;
-}
+void onApplication() { onExpression(new StellaApplicationExpression()); }
 
-void onCondition() {
-  onExpression(new StellaConditionExpression());
-  state = STATE_AWAITING_EXPRESSION;
-}
+void onCondition() { onExpression(new StellaConditionExpression()); }
 
-void onTuple() {
-  onExpression(new StellaTupleExpression());
-  state = STATE_AWAITING_EXPRESSION;
-}
+void onTuple() { onExpression(new StellaTupleExpression()); }
 
 void onDotTuple(int index) {
   onExpression(new StellaDotTupleExpression(index));
-  state = STATE_AWAITING_EXPRESSION;
 }
 
-void onInl() {
-  onExpression(new StellaInlInrExpression(1));
-  state = STATE_AWAITING_EXPRESSION;
-}
+void onInl() { onExpression(new StellaInlInrExpression(1)); }
 
-void onInr() {
-  onExpression(new StellaInlInrExpression(2));
-  state = STATE_AWAITING_EXPRESSION;
-}
+void onInr() { onExpression(new StellaInlInrExpression(2)); }
 
-void onMatch(int size) {
-  onExpression(new StellaMatchExpression(size));
-  state = STATE_AWAITING_EXPRESSION;
-}
+void onMatch(int size) { onExpression(new StellaMatchExpression(size)); }
 
-void onMatchCase() {
-  onExpression(new StellaMatchCaseExpression());
-  state = STATE_AWAITING_EXPRESSION;
-}
+void onMatchCase() { onExpression(new StellaMatchCaseExpression()); }
 
-void onPatternInl() {
-  onExpression(new StellaPatternInlInrExpression(1));
-  state = STATE_AWAITING_EXPRESSION;
-}
+void onPatternInl() { onExpression(new StellaPatternInlInrExpression(1)); }
 
-void onPatternInr() {
-  onExpression(new StellaPatternInlInrExpression(2));
-  state = STATE_AWAITING_EXPRESSION;
-}
+void onPatternInr() { onExpression(new StellaPatternInlInrExpression(2)); }
 
 void onPatternVar(Stella::StellaIdent ident) {
   onExpression(new StellaPatternVarExpression(ident));
-  state = STATE_AWAITING_EXPRESSION;
+}
+
+void onSequence() { onExpression(new StellaSequenceExpression()); }
+
+void onRef() { onExpression(new StellaRefExpression()); }
+
+void onDeref() { onExpression(new StellaDerefExpression()); }
+
+void onAssignment() { onExpression(new StellaAssignmentExpression()); }
+
+void onPanic() { onExpression(new StellaPanicExpression()); }
+
+void onRecord(int size) { onExpression(new StellaRecordExpression(size)); }
+
+void onDotRecord(std::string field) {
+  onExpression(new StellaDotRecordExpression(field));
 }
 
 // Functions below are used for debugging only. They print function and
@@ -263,7 +159,7 @@ void print_expression(StellaExpression *expression, int level) {
     StellaAbstractionExpression *expr =
         (StellaAbstractionExpression *)expression;
     std::cout << "ABSTRACTION(" << expr->paramIdent << ": "
-              << expr->paramType.toString()
+              << expr->stellaType.children[0].toString()
               << "): " << expr->expression->getStellaType().toString()
               << std::endl;
     print_expression(expr->expression, level + 1);
@@ -389,13 +285,67 @@ void print_expression(StellaExpression *expression, int level) {
               << std::endl;
     break;
   }
+  case STELLA_EXPRESSION_TYPE_SEQUENCE: {
+    std::cout << "SEQUENCE";
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    StellaSequenceExpression *expr = (StellaSequenceExpression *)expression;
+    print_expression(expr->expression1, level + 1);
+    print_expression(expr->expression2, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_REF: {
+    std::cout << "REF";
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    StellaRefExpression *expr = (StellaRefExpression *)expression;
+    print_expression(expr->expression, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_DEREF: {
+    std::cout << "DEREF";
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    StellaDerefExpression *expr = (StellaDerefExpression *)expression;
+    print_expression(expr->expression, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_ASSIGNMENT: {
+    std::cout << "ASSIGNMENT";
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    StellaAssignmentExpression *expr = (StellaAssignmentExpression *)expression;
+    print_expression(expr->expression1, level + 1);
+    print_expression(expr->expression2, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_PANIC: {
+    std::cout << "PANIC";
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_RECORD: {
+    std::cout << "RECORD";
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_DOT_RECORD: {
+    StellaDotRecordExpression *expr = (StellaDotRecordExpression *)expression;
+    std::cout << "DOT RECORD (." << expr->field << ")";
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    print_expression(expr->expression, level + 1);
+    break;
+  }
   }
 }
 
 void print_function(StellaFunction *function) {
   std::cout << function->ident << "(" << function->paramIdent << ": "
-            << function->paramType.toString()
-            << "): " << function->returnType.toString() << std::endl;
+            << function->type.getParamType().toString()
+            << "): " << function->type.getReturnType().toString() << std::endl;
 
   print_expression(function->expression, 1);
 }
@@ -492,7 +442,7 @@ void VisitTypeCheck::visitDeclExceptionVariant(
 }
 
 void VisitTypeCheck::visitAssign(Assign *assign) {
-  /* Code For Assign Goes Here */
+  onAssignment();
 
   if (assign->expr_1)
     assign->expr_1->accept(this);
@@ -501,21 +451,20 @@ void VisitTypeCheck::visitAssign(Assign *assign) {
 }
 
 void VisitTypeCheck::visitRef(Ref *ref) {
-  /* Code For Ref Goes Here */
+  onRef();
 
   if (ref->expr_)
     ref->expr_->accept(this);
 }
 
 void VisitTypeCheck::visitDeref(Deref *deref) {
-  /* Code For Deref Goes Here */
+  onDeref();
 
   if (deref->expr_)
     deref->expr_->accept(this);
 }
 
-void VisitTypeCheck::visitPanic(Panic *panic) { /* Code For Panic Goes Here */
-}
+void VisitTypeCheck::visitPanic(Panic *panic) { onPanic(); }
 
 void VisitTypeCheck::visitThrow(Throw *throw_) {
   /* Code For Throw Goes Here */
@@ -620,7 +569,8 @@ void VisitTypeCheck::visitTypeTuple(TypeTuple *type_tuple) {
 }
 
 void VisitTypeCheck::visitTypeRecord(TypeRecord *type_record) {
-  /* Code For TypeRecord Goes Here */
+  onExactType(StellaType(STELLA_DATA_TYPE_RECORD,
+                         type_record->listrecordfieldtype_->size()));
 
   if (type_record->listrecordfieldtype_)
     type_record->listrecordfieldtype_->accept(this);
@@ -661,7 +611,7 @@ void VisitTypeCheck::visitTypeBottom(TypeBottom *type_bottom) {
 }
 
 void VisitTypeCheck::visitTypeRef(TypeRef *type_ref) {
-  /* Code For TypeRef Goes Here */
+  onType(STELLA_DATA_TYPE_REF);
 
   if (type_ref->type_)
     type_ref->type_->accept(this);
@@ -915,15 +865,16 @@ void VisitTypeCheck::visitLogicAnd(LogicAnd *logic_and) {
 }
 
 void VisitTypeCheck::visitDotRecord(DotRecord *dot_record) {
-  /* Code For DotRecord Goes Here */
+  onDotRecord(dot_record->stellaident_);
 
   if (dot_record->expr_)
     dot_record->expr_->accept(this);
-  visitStellaIdent(dot_record->stellaident_);
+  // visitStellaIdent(dot_record->stellaident_);
 }
 
 void VisitTypeCheck::visitRecord(Record *record) {
   /* Code For Record Goes Here */
+  onRecord(record->listbinding_->size());
 
   if (record->listbinding_)
     record->listbinding_->accept(this);
@@ -1201,7 +1152,7 @@ void VisitTypeCheck::visitAProgram(AProgram *a_program) {
 void VisitTypeCheck::visitPatternVar(PatternVar *pattern_var) {
   onPatternVar(pattern_var->stellaident_);
 
-  visitStellaIdent(pattern_var->stellaident_);
+  // visitStellaIdent(pattern_var->stellaident_);
 }
 
 void VisitTypeCheck::visitALabelledPattern(
@@ -1214,15 +1165,13 @@ void VisitTypeCheck::visitALabelledPattern(
 }
 
 void VisitTypeCheck::visitABinding(ABinding *a_binding) {
-  /* Code For ABinding Goes Here */
-
   visitStellaIdent(a_binding->stellaident_);
   if (a_binding->expr_)
     a_binding->expr_->accept(this);
 }
 
 void VisitTypeCheck::visitSequence(Sequence *sequence) {
-  /* Code For Sequence Goes Here */
+  onSequence();
 
   if (sequence->expr_1)
     sequence->expr_1->accept(this);
@@ -1366,7 +1315,7 @@ void VisitTypeCheck::visitConstInt(ConstInt *const_int) {
 void VisitTypeCheck::visitVar(Var *var) {
   onVar(var->stellaident_);
 
-  visitStellaIdent(var->stellaident_);
+  // visitStellaIdent(var->stellaident_);
 }
 
 void VisitTypeCheck::visitStellaIdent(StellaIdent x) {

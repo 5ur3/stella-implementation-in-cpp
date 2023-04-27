@@ -21,13 +21,16 @@ bool StellaApplicationExpression::isTypingCorrect() {
   } else if (!expression1->getStellaType().isFunction()) {
     std::cout << "Type error: applying non function" << std::endl;
     isCorrect = false;
-  } else if (!expression1->getStellaType().getParamType().isEqual(
-                 expression2->getStellaType())) {
+  } else if (!expression2->getStellaType().castsTo(
+                 expression1->getStellaType().getParamType())) {
     std::cout << "Type error: applying type \""
               << expression2->getStellaType().toString() << "\""
               << " to a function expecting \""
               << expression1->getStellaType().getParamType().toString() << "\""
               << std::endl;
+    isCorrect = false;
+  } else if (expression2->getStellaType().type == STELLA_DATA_TYPE_ANY) {
+    std::cout << "Type error: argument type unknown" << std::endl;
     isCorrect = false;
   }
 
@@ -51,6 +54,12 @@ void StellaApplicationExpression::proxyExpressionTypeToken(
     return this->expression1->proxyExpressionTypeToken(typeToken);
   }
   this->expression2->proxyExpressionTypeToken(typeToken);
+}
+void StellaApplicationExpression::proxyType(StellaType type) {
+  if (!this->expression1->isParsed()) {
+    return this->expression1->proxyType(type);
+  }
+  this->expression2->proxyType(type);
 }
 
 void StellaApplicationExpression::proxyExpression(

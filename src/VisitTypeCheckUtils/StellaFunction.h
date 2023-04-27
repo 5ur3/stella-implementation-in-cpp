@@ -8,19 +8,13 @@
 // Representation of a defined stella function
 class StellaFunction {
 public:
-  Stella::StellaIdent ident;
-  Stella::StellaIdent paramIdent;
-  StellaType paramType;
-  StellaType returnType;
-  StellaExpression *expression;
+  Stella::StellaIdent ident = "";
+  Stella::StellaIdent paramIdent = "";
+  StellaType type = StellaType(STELLA_DATA_TYPE_FUN);
+  StellaExpression *expression = NULL;
   std::map<Stella::StellaIdent, StellaType> context;
 
-  StellaFunction(Stella::StellaIdent ident,
-                 std::map<Stella::StellaIdent, StellaType> context);
-  void setParamIdent(Stella::StellaIdent paramName);
-  void assembleParamType(StellaDataType paramTypeToken);
-  void assembleReturnType(StellaDataType returnTypeToken);
-  void setExpression(StellaExpression *expression);
+  StellaFunction(std::map<Stella::StellaIdent, StellaType> context);
   bool isTypingCorrect();
 
   // Methods below are used to pass things down the tree.
@@ -30,6 +24,7 @@ public:
   // "proxyExpression" method below and can be accessed as
   // "StellaFunction.expression.expression"
   void proxyExpressionTypeToken(StellaDataType typeToken);
+  void proxyType(StellaType type);
   void proxyExpression(StellaExpression *expression);
   void proxyIdent(Stella::StellaIdent ident);
 };

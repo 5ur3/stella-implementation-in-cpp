@@ -6,8 +6,7 @@ StellaTupleExpression::StellaTupleExpression() {
 }
 
 StellaType StellaTupleExpression::getStellaType() {
-  return StellaType(StellaType(STELLA_DATA_TYPE_TUPLE),
-                    this->expression1->getStellaType(),
+  return StellaType(STELLA_DATA_TYPE_TUPLE, this->expression1->getStellaType(),
                     this->expression2->getStellaType());
 }
 
@@ -41,6 +40,13 @@ void StellaTupleExpression::proxyExpressionTypeToken(StellaDataType typeToken) {
     return this->expression1->proxyExpressionTypeToken(typeToken);
   }
   return this->expression2->proxyExpressionTypeToken(typeToken);
+}
+
+void StellaTupleExpression::proxyType(StellaType type) {
+  if (!this->expression1->isParsed()) {
+    return this->expression1->proxyType(type);
+  }
+  return this->expression2->proxyType(type);
 }
 
 void StellaTupleExpression::proxyExpression(StellaExpression *expression) {
