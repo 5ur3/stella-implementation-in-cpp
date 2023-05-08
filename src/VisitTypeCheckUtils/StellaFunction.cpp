@@ -28,24 +28,18 @@ void StellaFunction::proxyExpression(StellaExpression *expression) {
   this->expression->proxyExpression(expression);
 }
 void StellaFunction::proxyIdent(Stella::StellaIdent ident) {
-  std::cout << "FUN ident proxying: " << ident << std::endl;
   if (this->ident.size() == 0) {
-    std::cout << 1 << std::endl;
     this->ident = ident;
     return;
   }
   if (this->paramIdent.size() == 0) {
-    std::cout << 2 << std::endl;
     this->paramIdent = ident;
     return;
   }
   if (!this->type.isCompleted()) {
-    std::cout << this->type.toString() << std::endl;
-    std::cout << 3 << std::endl;
     this->type.parseIdent(ident);
     return;
   }
-  std::cout << 4 << std::endl;
   this->expression->proxyIdent(ident);
 }
 bool StellaFunction::isTypingCorrect() {

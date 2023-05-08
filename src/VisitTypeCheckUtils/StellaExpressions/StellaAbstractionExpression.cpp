@@ -46,7 +46,6 @@ void StellaAbstractionExpression::proxyExpression(
   }
 }
 void StellaAbstractionExpression::proxyIdent(Stella::StellaIdent ident) {
-  std::cout << "HERE" << std::endl;
   if (this->paramIdent == "") {
     this->paramIdent = ident;
   } else if (!this->stellaType.children[0].isCompleted()) {
