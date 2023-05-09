@@ -47,6 +47,8 @@ set (SRCS
   src/VisitTypeCheckUtils/StellaExpressions/StellaPanicExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaRecordExpression.cpp
   src/VisitTypeCheckUtils/StellaExpressions/StellaDotRecordExpression.cpp
+  src/VisitTypeCheckUtils/StellaExpressions/StellaTypeAbstractionExpression.cpp
+  src/VisitTypeCheckUtils/StellaExpressions/StellaTypeApplicationExpression.cpp
   src/VisitTypeCheckUtils/StellaFunction.h
   src/VisitTypeCheckUtils/StellaFunction.cpp
   src/VisitTypeCheck.h

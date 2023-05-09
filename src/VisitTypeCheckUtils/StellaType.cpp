@@ -30,6 +30,10 @@ StellaType::StellaType(StellaDataType baseType) {
     break;
   case STELLA_DATA_TYPE_RECORD:
     break;
+  case STELLA_DATA_TYPE_FORALL:
+    break;
+  case STELLA_DATA_TYPE_VAR:
+    break;
   case STELLA_DATA_TYPE_INVALID:
     break;
   case STELLA_DATA_TYPE_FUN:
@@ -57,9 +61,18 @@ StellaType::StellaType(StellaDataType baseType, StellaType arg1,
   this->children.push_back(arg1);
   this->children.push_back(arg2);
 };
-StellaType::StellaType(StellaDataType baseType, int childrenCount) {
+StellaType::StellaType(StellaDataType baseType, int numberOfComponents) {
   this->type = baseType;
-  this->childrenCount = childrenCount;
+  if (baseType == STELLA_DATA_TYPE_FORALL) {
+    this->names = std::vector<std::string>(numberOfComponents, "");
+    this->childrenCount = 1;
+  } else {
+    this->childrenCount = numberOfComponents;
+  }
+};
+StellaType::StellaType(std::string typeVar) {
+  this->type = STELLA_DATA_TYPE_VAR;
+  this->names.push_back(typeVar);
 };
 
 void StellaType::parse(StellaDataType typeToken) {
@@ -90,6 +103,15 @@ void StellaType::parseIdent(std::string ident) {
     return;
   }
 
+  if (this->type == STELLA_DATA_TYPE_FORALL) {
+    for (int i = 0; i < this->names.size(); i++) {
+      if (this->names[i] == "") {
+        this->names[i] = ident;
+        return;
+      }
+    }
+  }
+
   this->children[this->children.size() - 1].parseIdent(ident);
 }
 
@@ -118,6 +140,10 @@ bool StellaType::isRefType() {
          this->type == STELLA_DATA_TYPE_ANY;
 }
 
+bool StellaType::isForallType() {
+  return this->type == STELLA_DATA_TYPE_FORALL;
+}
+
 StellaType StellaType::getSubType(int index) {
   if (this->type == STELLA_DATA_TYPE_ANY) {
     return StellaType(STELLA_DATA_TYPE_ANY);
@@ -130,9 +156,19 @@ StellaType StellaType::getSubType(int index) {
   return this->children[index - 1];
 }
 
-StellaType StellaType::getParamType() { return this->getSubType(1); }
+StellaType StellaType::getParamType() {
+  if (this->type == STELLA_DATA_TYPE_FORALL) {
+    return this->children[0].getParamType();
+  }
+  return this->getSubType(1);
+}
 
-StellaType StellaType::getReturnType() { return this->getSubType(2); }
+StellaType StellaType::getReturnType() {
+  if (this->type == STELLA_DATA_TYPE_FORALL) {
+    return this->children[0].getReturnType();
+  }
+  return this->getSubType(2);
+}
 
 StellaType StellaType::getDerefType() { return this->getSubType(1); }
 
@@ -184,6 +220,26 @@ bool StellaType::castsTo(StellaType stellaType) {
     return true;
   }
 
+  if (this->type == STELLA_DATA_TYPE_FORALL &&
+      stellaType.type == STELLA_DATA_TYPE_FORALL) {
+    if (this->names.size() != stellaType.names.size()) {
+      return false;
+    }
+
+    for (int i = 0; i < this->names.size(); i++) {
+      if (this->names[i] != stellaType.names[i]) {
+        return false;
+      }
+    }
+
+    return this->getSubType(1).castsTo(stellaType.getSubType(1));
+  }
+
+  if (this->type == STELLA_DATA_TYPE_VAR &&
+      stellaType.type == STELLA_DATA_TYPE_VAR) {
+    return this->names[0] == stellaType.names[0];
+  }
+
   if (this->childrenCount != stellaType.childrenCount) {
     return false;
   }
@@ -233,6 +289,17 @@ std::string StellaType::toString() {
   case STELLA_DATA_TYPE_RECORD:
     typeString = "record";
     break;
+  case STELLA_DATA_TYPE_FORALL: {
+    typeString = "forall [";
+    for (int i = 0; i < this->names.size(); i++) {
+      typeString += this->names[i] + ", ";
+    }
+    typeString += "]";
+    break;
+  }
+  case STELLA_DATA_TYPE_VAR:
+    typeString = this->names[0];
+    break;
   case STELLA_DATA_TYPE_INVALID:
     typeString = "INVALID";
     break;
@@ -252,6 +319,69 @@ std::string StellaType::toString() {
   }
 
   return typeString;
+}
+
+bool StellaType::areVarsDefined() {
+  return this->areVarsDefined(std::vector<std::string>(0));
+}
+
+bool StellaType::areVarsDefined(std::vector<std::string> vars) {
+  if (this->type == STELLA_DATA_TYPE_VAR) {
+    for (int i = 0; i < vars.size(); i++) {
+      if (vars[i] == this->names[0]) {
+        return true;
+      }
+    }
+
+    std::cout << "Type error: unknown type alias \"" << this->names[0] << "\""
+              << std::endl;
+
+    return false;
+  }
+
+  if (this->type == STELLA_DATA_TYPE_FORALL) {
+    for (int i = 0; i < this->names.size(); i++) {
+      vars.push_back(this->names[i]);
+    }
+    return this->children[0].areVarsDefined(vars);
+  }
+
+  for (int i = 0; i < this->children.size(); i++) {
+    if (!this->children[i].areVarsDefined(vars)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+StellaType
+StellaType::getSubstitutionType(std::vector<StellaType> substitutions) {
+  if (this->isForallType()) {
+    StellaType type =
+        this->children[0].getSubstitutionType(this->names[0], substitutions[0]);
+    for (int i = 1; i < this->names.size(); i++) {
+      type = type.getSubstitutionType(this->names[i], substitutions[i]);
+    }
+    return type;
+  }
+  return StellaType(STELLA_DATA_TYPE_INVALID);
+}
+
+StellaType StellaType::getSubstitutionType(std::string var,
+                                           StellaType substitution) {
+  if (this->type == STELLA_DATA_TYPE_VAR && this->names[0] == var) {
+    return substitution;
+  }
+
+  StellaType type = StellaType(this->type);
+  for (int i = 0; i < this->children.size(); i++) {
+    type.children.push_back(
+        this->children[i].getSubstitutionType(var, substitution));
+  }
+  type.names = this->names;
+  type.childrenCount = this->childrenCount;
+  return type;
 }
 
 StellaType mergeTypes(StellaType type1, StellaType type2) {

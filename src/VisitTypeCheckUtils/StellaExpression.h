@@ -30,7 +30,10 @@ enum StellaExpressionType {
   STELLA_EXPRESSION_TYPE_ASSIGNMENT = 19,
   STELLA_EXPRESSION_TYPE_PANIC = 20,
   STELLA_EXPRESSION_TYPE_RECORD = 21,
-  STELLA_EXPRESSION_TYPE_DOT_RECORD = 22
+  STELLA_EXPRESSION_TYPE_DOT_RECORD = 22,
+
+  STELLA_EXPRESSION_TYPE_TYPE_ABSTRACTION = 23,
+  STELLA_EXPRESSION_TYPE_TYPE_APPLICATION = 24
 };
 
 // Representation of any stella expression
@@ -371,6 +374,36 @@ public:
   std::string field;
 
   StellaDotRecordExpression(std::string field);
+  StellaType getStellaType();
+  bool isTypingCorrect();
+  void proxyIdent(Stella::StellaIdent ident);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
+  void proxyType(StellaType type);
+  void proxyExpression(StellaExpression *expression);
+  bool isParsed();
+};
+
+class StellaTypeAbstractionExpression : public StellaExpression {
+public:
+  StellaExpression *expression = NULL;
+  std::vector<std::string> typeVars;
+
+  StellaTypeAbstractionExpression(int typeVarsCount);
+  StellaType getStellaType();
+  bool isTypingCorrect();
+  void proxyIdent(Stella::StellaIdent ident);
+  void proxyExpressionTypeToken(StellaDataType typeToken);
+  void proxyType(StellaType type);
+  void proxyExpression(StellaExpression *expression);
+  bool isParsed();
+};
+
+class StellaTypeApplicationExpression : public StellaExpression {
+public:
+  StellaExpression *expression = NULL;
+  StellaType types;
+
+  StellaTypeApplicationExpression(int typesCount);
   StellaType getStellaType();
   bool isTypingCorrect();
   void proxyIdent(Stella::StellaIdent ident);

@@ -15,6 +15,8 @@ enum StellaDataType {
   STELLA_DATA_TYPE_SUM = 5,
   STELLA_DATA_TYPE_REF = 6,
   STELLA_DATA_TYPE_RECORD = 7,
+  STELLA_DATA_TYPE_FORALL = 8,
+  STELLA_DATA_TYPE_VAR = 9,
 
   STELLA_DATA_TYPE_ANY = 100,
 
@@ -39,7 +41,8 @@ public:
   StellaType();
   StellaType(StellaDataType baseType, StellaType arg);
   StellaType(StellaDataType baseType, StellaType arg1, StellaType arg2);
-  StellaType(StellaDataType baseType, int childrenCount);
+  StellaType(StellaDataType baseType, int numberOfComponents);
+  StellaType(std::string typeVar);
 
   bool castsTo(StellaType stellaType);
   bool biCasts(StellaType stellaType);
@@ -50,11 +53,17 @@ public:
   bool isTuple();
   bool isSumType();
   bool isRefType();
+  bool isForallType();
 
   StellaType getSubType(int index);
   StellaType getParamType();
   StellaType getReturnType();
   StellaType getDerefType();
+  StellaType getSubstitutionType(std::vector<StellaType> substitution);
+  StellaType getSubstitutionType(std::string var, StellaType substitution);
+
+  bool areVarsDefined();
+  bool areVarsDefined(std::vector<std::string> vars);
 };
 
 StellaType mergeTypes(StellaType type1, StellaType type2);

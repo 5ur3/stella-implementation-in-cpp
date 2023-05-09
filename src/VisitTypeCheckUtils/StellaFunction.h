@@ -14,7 +14,7 @@ public:
   StellaExpression *expression = NULL;
   std::map<Stella::StellaIdent, StellaType> context;
 
-  StellaFunction(std::map<Stella::StellaIdent, StellaType> context);
+  StellaFunction(std::map<Stella::StellaIdent, StellaType> context, int genericsCount);
   bool isTypingCorrect();
 
   // Methods below are used to pass things down the tree.

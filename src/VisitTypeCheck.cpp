@@ -42,17 +42,19 @@ void verifyFunction(StellaFunction *function) {
 
 // Functions below are called directly from the template visitor
 // These functions control the program state and build typing trees
-void onFunction(Stella::StellaIdent ident) {
+void onFunction(Stella::StellaIdent ident, int genericsSize) {
   // std::cout << "FUN " << ident << std::endl;
   if (currentFunction != NULL) {
     verifyFunction(currentFunction);
     globalContext.insert({currentFunction->ident, currentFunction->type});
   }
 
-  StellaFunction *function = new StellaFunction(globalContext);
+  StellaFunction *function = new StellaFunction(globalContext, genericsSize);
   stellaFunctions.insert({ident, function});
   currentFunction = function;
 }
+
+void onFunction(Stella::StellaIdent ident) { onFunction(ident, 0); }
 
 void onIdent(Stella::StellaIdent ident) {
   // std::cout << "IDENT " << ident << std::endl;
@@ -66,7 +68,11 @@ void onType(StellaDataType type) {
   // std::cout << "TYPE END" << std::endl;
 }
 
-void onExactType(StellaType type) { currentFunction->proxyType(type); }
+void onExactType(StellaType type) {
+  // std::cout << "EXACT TYPE " << type.toString() << std::endl;
+  currentFunction->proxyType(type);
+  // std::cout << "EXACT TYPE END" << std::endl;
+}
 
 void onExpression(StellaExpression *expression) {
   // std::cout << "EXPR " << expression->type << std::endl;
@@ -130,6 +136,14 @@ void onRecord(int size) { onExpression(new StellaRecordExpression(size)); }
 
 void onDotRecord(std::string field) {
   onExpression(new StellaDotRecordExpression(field));
+}
+
+void onTypeAbstraction(int size) {
+  onExpression(new StellaTypeAbstractionExpression(size));
+}
+
+void onTypeApplication(int size) {
+  onExpression(new StellaTypeApplicationExpression(size));
 }
 
 // Functions below are used for debugging only. They print function and
@@ -339,13 +353,38 @@ void print_expression(StellaExpression *expression, int level) {
     print_expression(expr->expression, level + 1);
     break;
   }
+  case STELLA_EXPRESSION_TYPE_TYPE_ABSTRACTION: {
+    StellaTypeAbstractionExpression *expr =
+        (StellaTypeAbstractionExpression *)expression;
+    std::cout << "TYPE ABSTRACTION [";
+    for (int i = 0; i < expr->typeVars.size(); i++) {
+      std::cout << expr->typeVars[i] << ", ";
+    }
+    std::cout << "]";
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    print_expression(expr->expression, level + 1);
+    break;
+  }
+  case STELLA_EXPRESSION_TYPE_TYPE_APPLICATION: {
+    StellaTypeApplicationExpression *expr =
+        (StellaTypeApplicationExpression *)expression;
+    std::cout << "TYPE APPLICATION [";
+    for (int i = 0; i < expr->types.children.size(); i++) {
+      std::cout << expr->types.children[i].toString() << ", ";
+    }
+    std::cout << "]";
+    std::cout << " : (" << expression->getStellaType().toString() << ")"
+              << std::endl;
+    print_expression(expr->expression, level + 1);
+    break;
+  }
   }
 }
 
 void print_function(StellaFunction *function) {
-  std::cout << function->ident << "(" << function->paramIdent << ": "
-            << function->type.getParamType().toString()
-            << "): " << function->type.getReturnType().toString() << std::endl;
+  std::cout << function->ident << ": " << function->type.toString()
+            << std::endl;
 
   print_expression(function->expression, 1);
 }
@@ -618,9 +657,7 @@ void VisitTypeCheck::visitTypeRef(TypeRef *type_ref) {
 }
 
 void VisitTypeCheck::visitTypeVar(TypeVar *type_var) {
-  /* Code For TypeVar Goes Here */
-
-  visitStellaIdent(type_var->stellaident_);
+  onExactType(StellaType(type_var->stellaident_));
 }
 
 void VisitTypeCheck::visitAMatchCase(AMatchCase *a_match_case) {
@@ -1324,7 +1361,8 @@ void VisitTypeCheck::visitStellaIdent(StellaIdent x) {
 }
 
 void VisitTypeCheck::visitDeclFunGeneric(DeclFunGeneric *decl_fun_generic) {
-  /* Code For DeclFunGeneric Goes Here */
+  onFunction(decl_fun_generic->stellaident_,
+             decl_fun_generic->liststellaident_->size());
 
   if (decl_fun_generic->listannotation_)
     decl_fun_generic->listannotation_->accept(this);
@@ -1346,6 +1384,8 @@ void VisitTypeCheck::visitDeclFunGeneric(DeclFunGeneric *decl_fun_generic) {
 void VisitTypeCheck::visitTypeAbstraction(TypeAbstraction *type_abstraction) {
   /* Code For TypeAbstraction Goes Here */
 
+  onTypeAbstraction(type_abstraction->liststellaident_->size());
+
   if (type_abstraction->liststellaident_)
     type_abstraction->liststellaident_->accept(this);
   if (type_abstraction->expr_)
@@ -1355,15 +1395,19 @@ void VisitTypeCheck::visitTypeAbstraction(TypeAbstraction *type_abstraction) {
 void VisitTypeCheck::visitTypeApplication(TypeApplication *type_application) {
   /* Code For TypeApplication Goes Here */
 
-  if (type_application->expr_)
-    type_application->expr_->accept(this);
+  onTypeApplication(type_application->listtype_->size());
+
   if (type_application->listtype_)
     type_application->listtype_->accept(this);
+  if (type_application->expr_)
+    type_application->expr_->accept(this);
 }
 
 void VisitTypeCheck::visitTypeForAll(TypeForAll *type_for_all) {
   /* Code For TypeForAll Goes Here */
 
+  onExactType(StellaType(STELLA_DATA_TYPE_FORALL,
+                         type_for_all->liststellaident_->size()));
   if (type_for_all->liststellaident_)
     type_for_all->liststellaident_->accept(this);
   if (type_for_all->type_)
